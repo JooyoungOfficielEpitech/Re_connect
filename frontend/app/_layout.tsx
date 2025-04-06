@@ -99,22 +99,14 @@ function RootLayoutNav() {
           name="generator"
           options={{
             title: '설득 메시지 생성기',
-            headerShown: true,
-            headerStyle: { backgroundColor: '#121212' },
-            headerTintColor: '#FFFFFF',
-            headerTitleStyle: { fontWeight: 'bold' },
-            headerBackTitle: '',
+            headerShown: false
           }}
         />
         <Stack.Screen
           name="report"
           options={{
             title: '반응 예측 리포트',
-            headerShown: true,
-            headerStyle: { backgroundColor: '#121212' },
-            headerTintColor: '#FFFFFF',
-            headerTitleStyle: { fontWeight: 'bold' },
-            headerBackTitle: '',
+            headerShown: false
           }}
         />
         <Stack.Screen
@@ -160,6 +152,18 @@ function RootLayoutNav() {
             headerTitleStyle: { fontWeight: 'bold' },
             headerBackTitle: '',
           }}
+        />
+        <Stack.Screen
+          name="timing"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="mission"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="progress-details"
+          options={{ headerShown: false }}
         />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />

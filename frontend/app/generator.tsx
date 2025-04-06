@@ -9,7 +9,8 @@ import {
   Platform,
   Alert,
   TextInput,
-  ActivityIndicator
+  ActivityIndicator,
+  StatusBar
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
@@ -68,7 +69,6 @@ const Checkbox: React.FC<CheckboxProps> = ({ label, value, onValueChange }) => (
   </View>
 );
 
-
 const MessageGeneratorScreen = () => {
   const router = useRouter();
   const [messageType, setMessageType] = useState('첫 연락 (이별 후 28일)'); // Mock data
@@ -83,27 +83,41 @@ const MessageGeneratorScreen = () => {
   const selectMessageType = () => alert('메시지 유형 선택 (구현 예정)');
 
   const handleGenerate = async () => {
-      setIsGenerating(true);
-      console.log('Generating message with:', { messageType, toneStyle, goalLightConversation, goalRecallMemory });
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      // Mock new message generation (replace with actual API response)
-      setGeneratedMessage(generatedMessage + ' (재생성됨)');
-      setPrediction(`${Math.floor(Math.random() * 30) + 50}%`); // Random prediction
-      setWarning(Math.random() > 0.5 ? '주의: 상대방이 부담을 느낄 수 있음' : null); // Set to string or null
-      setIsGenerating(false);
+    if (!messageType || !toneStyle || !goalLightConversation || !goalRecallMemory) {
+      Alert.alert('입력 오류', '모든 필드를 입력해주세요.');
+      return;
+    }
+    setIsGenerating(true);
+    console.log('Generating message with:', { messageType, toneStyle, goalLightConversation, goalRecallMemory });
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Mock new message generation (replace with actual API response)
+    setGeneratedMessage(generatedMessage + ' (재생성됨)');
+    setPrediction(`${Math.floor(Math.random() * 30) + 50}%`); // Random prediction
+    setWarning(Math.random() > 0.5 ? '주의: 상대방이 부담을 느낄 수 있음' : null); // Set to string or null
+    setIsGenerating(false);
   };
 
   const handleSave = () => {
-      alert('메시지 저장 (구현 예정)');
-      // TODO: Implement save logic
+    alert('메시지 저장 (구현 예정)');
+    // TODO: Implement save logic
   };
 
   const goToScenarioAnalysis = () => alert('시나리오 분석 (구현 예정)');
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
+      {/* Explicit Header with Back Button */}
+      <View style={styles.explicitHeader}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={28} color="#FFFFFF" />
+        </TouchableOpacity>
+         <View style={{flex:1}} /> 
+      </View>
+
+      <ScrollView contentContainerStyle={styles.contentContainer}>
+        <Text style={styles.screenTitle}>설득 메시지 생성기</Text>
+        <Text style={styles.screenDescription}>AI의 도움을 받아 효과적인 메시지를 작성해보세요.</Text>
 
         <InputRow label="메시지 유형" value={messageType} onPress={selectMessageType} />
 
@@ -157,7 +171,6 @@ const MessageGeneratorScreen = () => {
              <Text style={styles.nextStepText}>다음: 이 메시지 이후 시나리오 분석</Text>
              <MaterialIcons name="keyboard-arrow-right" size={24} color="#888" />
          </TouchableOpacity>
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -166,17 +179,40 @@ const MessageGeneratorScreen = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: '#000000', // Black background
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
-  container: {
+  explicitHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    backgroundColor: '#000000', 
+  },
+  backButton: {
+    padding: 5, 
+  },
+  contentContainer: {
     padding: 20,
-    backgroundColor: '#121212',
+    paddingTop: 0, // Ensure no top padding here
+    backgroundColor: '#000000', // Match SafeArea background
     paddingBottom: 40,
+  },
+  screenTitle: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  screenDescription: {
+    color: '#A0A0A0',
+    fontSize: 16,
+    marginBottom: 30,
   },
   section: {
     marginBottom: 25,
   },
-  inputGroup: { // Reusing from onboarding
+  inputGroup: {
     marginBottom: 20,
     width: '100%',
   },
@@ -185,9 +221,9 @@ const styles = StyleSheet.create({
     color: '#AAA',
     marginBottom: 10,
   },
-  inputContainer: { // Reusing from onboarding
+  inputContainer: {
     width: '100%',
-    backgroundColor: '#282828',
+    backgroundColor: '#1C1C1E', // Darker card background
     borderRadius: 10,
     height: 50,
     paddingHorizontal: 15,
@@ -195,82 +231,91 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  inputText: { // Reusing from onboarding
+  inputText: {
       color: '#FFF',
       fontSize: 16,
   },
   buttonGroup: {
       flexDirection: 'row',
-      justifyContent: 'space-between', // Adjust as needed, maybe 'flex-start' and add margin
+      justifyContent: 'space-between',
   },
-  optionButton: { // Reusing from onboarding
-      // flex: 1, // Adjust width/flex as needed for 3 buttons
-      paddingHorizontal: 15, // Adjust padding
-      backgroundColor: '#282828',
-      paddingVertical: 12, // Slightly smaller vertical padding
-      borderRadius: 20, // More rounded
+  optionButton: {
+      paddingHorizontal: 15,
+      backgroundColor: '#282828', // Slightly lighter than card background
+      paddingVertical: 12,
+      borderRadius: 20,
       alignItems: 'center',
       marginHorizontal: 4,
+      borderWidth: 1,
+      borderColor: '#444', // Subtle border for non-selected
   },
-  optionButtonSelected: { // Reusing from onboarding
+  optionButtonSelected: {
       backgroundColor: '#4A90E2',
+      borderColor: '#4A90E2',
   },
-  optionButtonText: { // Reusing from onboarding
+  optionButtonText: {
       color: '#FFF',
-      fontSize: 14, // Slightly smaller text
+      fontSize: 14,
   },
-  optionButtonTextSelected: { // Reusing from onboarding
+  optionButtonTextSelected: {
       fontWeight: 'bold',
   },
-   checkboxContainer: { // Reusing from signup
+   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10, // Reduced margin
+    marginBottom: 10,
     width: '100%',
+    backgroundColor: '#1C1C1E', // Background for the row
+    padding: 15,
+    borderRadius: 10,
   },
-  checkboxBase: { // Reusing from signup
-    width: 22, // Slightly smaller
+  checkboxBase: {
+    width: 22,
     height: 22,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 4,
     borderWidth: 2,
     borderColor: '#4A90E2',
-    backgroundColor: '#282828',
-    marginRight: 10,
+    backgroundColor: 'transparent', // Make base transparent
+    marginRight: 12, // Increased margin
   },
-  checkboxLabel: { // Reusing from signup
+  checkboxLabel: {
     color: '#FFF',
-    fontSize: 14,
+    fontSize: 15, // Slightly larger
     flex: 1,
   },
    messageOutputContainer: {
-       backgroundColor: '#282828',
+       backgroundColor: '#1C1C1E', // Darker card background
        borderRadius: 10,
        padding: 15,
-       minHeight: 100, // Ensure some height
+       minHeight: 120, // Increased height
        marginBottom: 10,
    },
    messageOutput: {
        color: '#FFF',
        fontSize: 15,
        lineHeight: 22,
-       textAlignVertical: 'top', // For Android multiline
+       textAlignVertical: 'top',
    },
     predictionText: {
         fontSize: 14,
         color: '#AAA',
         marginBottom: 5,
+        marginTop: 10, // Added margin top
     },
     warningContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         marginTop: 5,
+        backgroundColor: '#332d1a', // Dark yellow background for warning
+        padding: 10,
+        borderRadius: 8,
     },
     warningText: {
         fontSize: 13,
         color: '#FFA500',
-        flex: 1, // Allow text wrapping
+        flex: 1,
     },
     actionButtonsContainer: {
         flexDirection: 'row',
@@ -307,7 +352,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: '#282828',
+        backgroundColor: '#1C1C1E', // Darker card background
         borderRadius: 10,
         padding: 15,
         marginTop: 10,

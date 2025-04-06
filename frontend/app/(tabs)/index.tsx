@@ -71,7 +71,7 @@ export default function HomeScreen() {
             iconName="time-outline"
             title="전략적 접촉 타이밍"
             subtitle="안전한 연락 시간 제안"
-            onPress={() => alert('전략적 접촉 타이밍 (구현 예정)')}
+            onPress={() => router.push('/timing')}
           />
           <DashboardCard
             iconName="chatbubble-ellipses-outline"
@@ -89,7 +89,7 @@ export default function HomeScreen() {
             iconName="extension-puzzle-outline"
             title="관계 복구 미션"
             subtitle="오늘의 행동 과제"
-            onPress={() => alert('관계 복구 미션 (구현 예정)')}
+            onPress={() => router.push('/mission')}
           />
         </View>
 
@@ -101,7 +101,7 @@ export default function HomeScreen() {
            </View>
            <View style={styles.progressLabels}>
                <Text style={styles.progressText}>{`${Math.round(progress * 100)}% 완료`}</Text>
-               <TouchableOpacity onPress={() => alert('상세 보기 (구현 예정)')}>
+               <TouchableOpacity onPress={() => router.push('/progress-details')}>
                    <Text style={styles.progressLink}>상세 보기</Text>
                </TouchableOpacity>
            </View>

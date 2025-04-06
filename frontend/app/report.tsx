@@ -71,13 +71,13 @@ const ReportScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" />
-      {/* Custom Header Area (Below actual navigation header) */}
-       <View style={styles.customHeader}>
-            <Text style={styles.customHeaderTitle}>반응 예측 리포트</Text>
-            <TouchableOpacity onPress={refreshReport}>
-                <Ionicons name="refresh" size={24} color="#4A90E2" />
-            </TouchableOpacity>
-        </View>
+      {/* Explicit Header with Back Button */}
+      <View style={styles.explicitHeader}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={28} color="#FFFFFF" />
+        </TouchableOpacity>
+        <View style={{flex:1}} />
+      </View>
 
       <ScrollView contentContainerStyle={styles.container}>
 
@@ -252,6 +252,14 @@ const styles = StyleSheet.create({
       fontWeight: 'bold',
       color: '#FFF',
       marginTop: 5,
+  },
+  explicitHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+  },
+  backButton: {
+    padding: 5,
   },
 });
 
