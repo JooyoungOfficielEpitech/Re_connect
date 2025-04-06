@@ -1,20 +1,32 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, Platform, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, Platform, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AntDesign } from '@expo/vector-icons';
+import { useAuth } from '@/context/AuthContext';
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { login } = useAuth();
 
-  const handleLogin = () => {
-    // TODO: Implement login logic (mock or actual API call)
-    console.log('Login attempt with:', email, password);
-    // Mock successful login and navigate
-    // In a real app, you'd set auth state here and rely on RootLayout redirection
-    Alert.alert('로그인 성공 (가상)', '메인 화면으로 이동합니다.');
-    router.replace('/(tabs)'); // Use replace to prevent going back to login
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('오류', '이메일과 비밀번호를 모두 입력해주세요.');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('Login successful for:', email);
+      login();
+    } catch (error) {
+      console.error('Login failed:', error);
+      Alert.alert('로그인 실패', '이메일 또는 비밀번호가 올바르지 않습니다.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoogleLogin = () => {
@@ -64,8 +76,16 @@ const LoginScreen = () => {
           {/* Add visibility toggle icon if needed */}
         </View>
 
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-          <Text style={styles.loginButtonText}>로그인</Text>
+        <TouchableOpacity
+          style={[styles.loginButton, isLoading && styles.buttonDisabled]}
+          onPress={handleLogin}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator size="small" color="#ffffff" />
+          ) : (
+            <Text style={styles.loginButtonText}>로그인</Text>
+          )}
         </TouchableOpacity>
 
         <Text style={styles.orText}>또는</Text>
@@ -247,7 +267,15 @@ const styles = StyleSheet.create({
         color: '#AAA',
         fontSize: 12,
         marginHorizontal: 5,
-    }
+    },
+  buttonDisabled: {
+    backgroundColor: '#888',
+  },
+  buttonText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
 });
 
 export default LoginScreen; 

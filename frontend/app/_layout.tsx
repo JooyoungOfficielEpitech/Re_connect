@@ -5,56 +5,77 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import 'react-native-reanimated';
-
 import { useColorScheme } from '@/hooks/useColorScheme';
+// Import AuthProvider and useAuth from context
+import { AuthProvider, useAuth } from '@/context/AuthContext'; 
 
-// Mock authentication state (replace with actual auth logic later)
-const useAuth = () => {
-  // Replace this with your actual authentication state logic
-  // For now, assume the user is not authenticated
-  return { isAuthenticated: false };
-};
+// Remove the mock useAuth hook here
+// const useAuth = () => { ... };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-// Custom hook to handle navigation based on auth state
-const useProtectedRoute = (isAuthenticated: boolean) => {
-  const pathname = usePathname(); // Get the current route path
+// Pass authLoading state as an argument
+const useProtectedRoute = (isAuthenticated: boolean, loaded: boolean, authLoading: boolean) => {
+  const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
+    if (!loaded || authLoading) { 
+      return;
+    }
+
     const isAuthScreen = pathname === '/login' || pathname === '/signup';
-    const isOnboardingScreen = pathname.startsWith('/onboarding'); // Check if it's an onboarding screen
+    const isOnboardingScreen = pathname.startsWith('/onboarding');
+    const isGeneratorScreen = pathname === '/generator';
+    const isReportScreen = pathname === '/report';
 
-    if (isAuthenticated && (isAuthScreen || isOnboardingScreen)) {
-      // Redirect authenticated users away from auth/onboarding screens to the main app
-      router.replace('/(tabs)'); 
-    }
-    // Redirect unauthenticated users to login ONLY IF they are NOT on auth screens AND NOT on onboarding screens
-    if (!isAuthenticated && !isAuthScreen && !isOnboardingScreen && pathname !== '/') { 
-        router.replace('/login'); 
-    }
+    const isProtectedRoute = !isAuthScreen && !isOnboardingScreen && !isGeneratorScreen && !isReportScreen;
 
-  }, [isAuthenticated, pathname, router]);
+    if (isAuthenticated && (isAuthScreen || isOnboardingScreen)) { 
+      router.replace('/(tabs)');
+    }
+    if (!isAuthenticated && isProtectedRoute) {
+       router.replace('/login');
+    }
+  }, [isAuthenticated, pathname, router, loaded, authLoading]);
 };
 
+// Wrap the RootLayoutNav with AuthProvider
 export default function RootLayout() {
+    return (
+        <AuthProvider>
+            <RootLayoutNav />
+        </AuthProvider>
+    );
+}
+
+function RootLayoutNav() {
   const colorScheme = useColorScheme();
-  const { isAuthenticated } = useAuth(); // Get auth state
-  const [loaded] = useFonts({
+  // Use the real useAuth hook from context
+  const { isAuthenticated, isLoading: authLoading } = useAuth(); 
+  const [loaded, fontError] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
-  useProtectedRoute(isAuthenticated); // Apply protected route logic
+  // Pass authLoading to the hook
+  useProtectedRoute(isAuthenticated, loaded && !fontError, authLoading); 
 
   useEffect(() => {
-    if (loaded) {
+    if (loaded || fontError) {
       SplashScreen.hideAsync();
     }
-  }, [loaded]);
+  }, [loaded, fontError]);
 
-  if (!loaded) {
+  // Handle font loading errors
+   if (fontError) {
+    console.error("Font loading error:", fontError);
+    // Optionally render an error message or fallback UI
+    return null; // Or some error component
+  }
+
+  // Return null while assets or auth state are loading
+  if (!loaded || authLoading) { 
     return null;
   }
 
@@ -74,6 +95,28 @@ export default function RootLayout() {
           }} 
         />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="generator"
+          options={{
+            title: '설득 메시지 생성기',
+            headerShown: true,
+            headerStyle: { backgroundColor: '#121212' },
+            headerTintColor: '#FFFFFF',
+            headerTitleStyle: { fontWeight: 'bold' },
+            headerBackTitle: '',
+          }}
+        />
+        <Stack.Screen
+          name="report"
+          options={{
+            title: '반응 예측 리포트',
+            headerShown: true,
+            headerStyle: { backgroundColor: '#121212' },
+            headerTintColor: '#FFFFFF',
+            headerTitleStyle: { fontWeight: 'bold' },
+            headerBackTitle: '',
+          }}
+        />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>

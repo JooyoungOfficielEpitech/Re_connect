@@ -7,7 +7,8 @@
         "./*"
       ]
     },
-    "moduleResolution": "bundler"
+    "moduleResolution": "bundler",
+    "jsx": "react-native"
   },
   "include": [
     "**/*.ts",
