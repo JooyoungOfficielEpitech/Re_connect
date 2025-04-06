@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '../../constants/Colors';
 
 // Mock progress value
 const progress = 0.3; // 30%
@@ -47,17 +48,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
        <StatusBar barStyle="light-content" />
-       {/* Custom Header */}
-        <View style={styles.header}>
-            <Text style={styles.headerTitle}>Re:connect</Text>
-            <Link href="/profile" asChild>
-              <TouchableOpacity>
-                  <Ionicons name="person-circle-outline" size={32} color="#A0A0A0" />
-              </TouchableOpacity>
-            </Link>
-        </View>
-
-      <ScrollView contentContainerStyle={styles.container}>
+       <ScrollView contentContainerStyle={styles.container}>
         {/* Current Status Section */}
         <View style={styles.statusSection}>
           <Text style={styles.sectionLabel}>현재 상태</Text>
@@ -94,18 +85,34 @@ export default function HomeScreen() {
         </View>
 
         {/* Progress Section */}
-        <View style={styles.progressSection}>
-           <Text style={styles.sectionLabel}>복구 진행 상태</Text>
-           <View style={styles.progressBarBackground}>
-               <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
-           </View>
-           <View style={styles.progressLabels}>
-               <Text style={styles.progressText}>{`${Math.round(progress * 100)}% 완료`}</Text>
-               <TouchableOpacity onPress={() => router.push('/progress-details')}>
-                   <Text style={styles.progressLink}>상세 보기</Text>
-               </TouchableOpacity>
-           </View>
+        <View style={styles.progressContainer}>
+          <View style={styles.progressHeader}>
+            <Text style={styles.sectionTitle}>복구 진행 상태</Text>
+            <TouchableOpacity onPress={() => router.push('/progress-details')}>
+              <Text style={styles.detailLink}>상세 보기</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${30}%` }]} />
+          </View>
+          <Text style={styles.progressText}>30% 완료</Text>
         </View>
+
+        <TouchableOpacity 
+          style={styles.guideButton}
+          onPress={() => router.push('/guide')}
+        >
+          <View style={styles.guideContent}>
+            <View style={styles.guideIconContainer}>
+              <Ionicons name="help-circle-outline" size={24} color={Colors.light.blue} />
+            </View>
+            <View style={styles.guideTextContainer}>
+              <Text style={styles.guideTitle}>앱 사용 가이드</Text>
+              <Text style={styles.guideDescription}>Re:connect의 기능을 자세히 알아보세요</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color={Colors.dark.text} />
+          </View>
+        </TouchableOpacity>
 
       </ScrollView>
     </SafeAreaView>
@@ -116,20 +123,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#121212', // Dark background
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 10, // Adjust for Android status bar
-    paddingBottom: 10,
-    backgroundColor: '#121212',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#4A90E2', // Blue title
   },
   container: {
     padding: 20,
@@ -192,38 +185,75 @@ const styles = StyleSheet.create({
     color: '#AAA',
     textAlign: 'center',
   },
-  progressSection: {
+  progressContainer: {
     backgroundColor: '#282828',
     borderRadius: 10,
     padding: 15,
     marginBottom: 20,
   },
-  progressBarBackground: {
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFF',
+  },
+  detailLink: {
+    fontSize: 14,
+    color: '#4A90E2', // Blue link color
+  },
+  progressBar: {
     height: 8,
     backgroundColor: '#444',
     borderRadius: 4,
     overflow: 'hidden',
-    width: '100%',
-    marginTop: 8,
     marginBottom: 8,
   },
-  progressBar: {
+  progressFill: {
     height: '100%',
     backgroundColor: '#4A90E2', // Blue progress color
     borderRadius: 4,
-  },
-  progressLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
   },
   progressText: {
     fontSize: 14,
     fontWeight: 'bold',
     color: '#FFF',
   },
-  progressLink: {
+  guideButton: {
+    backgroundColor: Colors.dark.card,
+    borderRadius: 12,
+    marginHorizontal: 20,
+    marginTop: 20,
+    padding: 16,
+  },
+  guideContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  guideIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(74, 122, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  guideTextContainer: {
+    flex: 1,
+  },
+  guideTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.light.text,
+    marginBottom: 4,
+  },
+  guideDescription: {
     fontSize: 14,
-    color: '#4A90E2', // Blue link color
+    color: Colors.dark.text,
   },
 });

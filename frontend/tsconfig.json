@@ -3,11 +3,11 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"],
+      "~/*": ["./*"]
     },
     "moduleResolution": "bundler",
+    "baseUrl": ".",
     "jsx": "react-native"
   },
   "include": [

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, Platform, Alert, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, Platform, Alert, ActivityIndicator, Pressable } from 'react-native';
+import { useRouter, Link } from 'expo-router';
 import { AntDesign } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
+import { CustomButton } from '@/components/CustomButton';
+import { Colors } from '@/constants/Colors';
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
@@ -117,13 +119,12 @@ const LoginScreen = () => {
         </View>
 
         <View style={styles.footer}>
-          <TouchableOpacity onPress={() => alert('개인정보처리방침 기능은 아직 구현되지 않았습니다.')}>
-              <Text style={styles.footerText}>개인정보처리방침</Text>
-          </TouchableOpacity>
-          <Text style={styles.footerSeparator}> | </Text>
-           <TouchableOpacity onPress={() => alert('이용약관 기능은 아직 구현되지 않았습니다.')}>
-             <Text style={styles.footerText}>이용약관</Text>
-           </TouchableOpacity>
+          <Text style={styles.footerText}>계정이 없으신가요?</Text>
+          <Link href="/signup" asChild>
+            <Pressable>
+              <Text style={styles.footerLink}>회원가입</Text>
+            </Pressable>
+          </Link>
         </View>
       </View>
     </SafeAreaView>
@@ -275,6 +276,12 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  footerLink: {
+    color: Colors.light.blue,
+    fontSize: 14,
+    marginLeft: 8,
+    fontWeight: '600',
   },
 });
 
