@@ -117,10 +117,54 @@ function RootLayoutNav() {
             headerBackTitle: '',
           }}
         />
+        <Stack.Screen
+          name="profile"
+          options={{
+            title: '프로필 및 설정',
+            headerShown: true,
+            headerStyle: { backgroundColor: '#000000' },
+            headerTintColor: '#FFFFFF',
+            headerTitleStyle: { fontWeight: 'bold' },
+            headerBackTitle: '',
+          }}
+        />
+        <Stack.Screen
+          name="settings/onboarding"
+          options={{
+            title: '온보딩 설정',
+            headerShown: true,
+            headerStyle: { backgroundColor: '#000000' },
+            headerTintColor: '#FFFFFF',
+            headerTitleStyle: { fontWeight: 'bold' },
+            headerBackTitle: '',
+          }}
+        />
+        <Stack.Screen
+          name="settings/relationship"
+          options={{
+            title: '관계 정보 수정',
+            headerShown: true,
+            headerStyle: { backgroundColor: '#000000' },
+            headerTintColor: '#FFFFFF',
+            headerTitleStyle: { fontWeight: 'bold' },
+            headerBackTitle: '',
+          }}
+        />
+        <Stack.Screen
+          name="settings/strategy"
+          options={{
+            title: '전략 스타일 설정',
+            headerShown: true,
+            headerStyle: { backgroundColor: '#000000' },
+            headerTintColor: '#FFFFFF',
+            headerTitleStyle: { fontWeight: 'bold' },
+            headerBackTitle: '',
+          }}
+        />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>
-      <StatusBar style="auto" />
+      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
     </ThemeProvider>
   );
 }

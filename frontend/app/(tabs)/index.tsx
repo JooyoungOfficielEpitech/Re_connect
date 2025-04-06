@@ -9,7 +9,7 @@ import {
   Platform,
   StatusBar
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, Link } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 // Mock progress value
@@ -50,9 +50,11 @@ export default function HomeScreen() {
        {/* Custom Header */}
         <View style={styles.header}>
             <Text style={styles.headerTitle}>Re:connect</Text>
-            <TouchableOpacity onPress={showInfo}>
-                <Ionicons name="information-circle-outline" size={28} color="#4A90E2" />
-            </TouchableOpacity>
+            <Link href="/profile" asChild>
+              <TouchableOpacity>
+                  <Ionicons name="person-circle-outline" size={32} color="#A0A0A0" />
+              </TouchableOpacity>
+            </Link>
         </View>
 
       <ScrollView contentContainerStyle={styles.container}>
