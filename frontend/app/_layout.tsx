@@ -29,15 +29,24 @@ const useProtectedRoute = (isAuthenticated: boolean, loaded: boolean, authLoadin
     const isOnboardingScreen = pathname.startsWith('/onboarding');
     const isGeneratorScreen = pathname === '/generator';
     const isReportScreen = pathname === '/report';
+    
+    // 보호된 경로 정의를 더 명확하게 수정
+    const isProtectedRoute = !isAuthScreen && 
+                           !isOnboardingScreen && 
+                           !isGeneratorScreen && 
+                           !isReportScreen &&
+                           !pathname.startsWith('/settings');
 
-    const isProtectedRoute = !isAuthScreen && !isOnboardingScreen && !isGeneratorScreen && !isReportScreen;
-
-    if (isAuthenticated && (isAuthScreen || isOnboardingScreen)) { 
+    // 인증되지 않은 사용자가 보호된 경로에 접근할 때만 로그인으로 리다이렉트
+    if (!isAuthenticated && isProtectedRoute) {
+      router.replace('/login');
+    }
+    
+    // 인증된 사용자가 인증 화면에 접근할 때만 대시보드로 리다이렉트
+    if (isAuthenticated && isAuthScreen) {
       router.replace('/(tabs)');
     }
-    if (!isAuthenticated && isProtectedRoute) {
-       router.replace('/login');
-    }
+
   }, [isAuthenticated, pathname, router, loaded, authLoading]);
 };
 

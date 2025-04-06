@@ -12,17 +12,10 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons'; // For icons
 import { useAuth } from '@/context/AuthContext'; // Import useAuth for logout
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 
 const ProfileScreen = () => {
   const { logout } = useAuth();
-
-  const handleLogout = () => {
-    logout();
-    // After logout, useProtectedRoute hook in _layout should redirect to /login
-    // No need for explicit navigation here if context state change triggers redirection
-    console.log('Logout initiated');
-  };
 
   // Settings data without href for now
   const otherSettings = [
@@ -52,71 +45,65 @@ const ProfileScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Membership Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>멤버십</Text>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>프리미엄 구독</Text>
-            <Text style={styles.cardText}>• 고급 설득 플랜 생성</Text>
-            <Text style={styles.cardText}>• 감정 분석 보고서</Text>
-            <Text style={styles.cardText}>• 관계 복구 리포트 PDF</Text>
-            <TouchableOpacity style={styles.subscribeButton} onPress={() => console.log('Subscribe Pressed')}>
+        {/* Premium Features Section */}
+        <View style={styles.premiumSection}>
+          <Text style={styles.sectionTitle}>프리미엄 구독</Text>
+          <View style={styles.premiumCard}>
+            <Text style={styles.premiumCardTitle}>고급 설득 플랜 생성</Text>
+            <View style={styles.premiumFeatures}>
+              <Text style={styles.premiumFeatureText}>• 고급 설득 플랜 생성</Text>
+              <Text style={styles.premiumFeatureText}>• 감정 분석 보고서</Text>
+              <Text style={styles.premiumFeatureText}>• 관계 복구 리포트 PDF</Text>
+            </View>
+            <TouchableOpacity style={styles.subscribeButton}>
               <Text style={styles.subscribeButtonText}>구독하기</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Settings Section */}
-        <View style={styles.section}>
+        <View style={styles.settingsSection}>
           <Text style={styles.sectionTitle}>설정</Text>
-          <View style={styles.settingsCard}>
-            {/* Onboarding Setting Link */}
-            <Link href="/settings/onboarding" asChild>
-              <TouchableOpacity style={styles.settingItem}>
-                <Ionicons name="settings-outline" size={22} color="#A0A0A0" style={styles.settingIcon} />
-                <Text style={styles.settingText}>온보딩 설정</Text>
-                <MaterialIcons name="chevron-right" size={24} color="#A0A0A0" />
-              </TouchableOpacity>
-            </Link>
-            <View style={styles.separator} />
-
-            {/* Relationship Setting Link */}
-            <Link href="/settings/relationship" asChild>
-              <TouchableOpacity style={styles.settingItem}>
-                <Ionicons name="people-outline" size={22} color="#A0A0A0" style={styles.settingIcon} />
-                <Text style={styles.settingText}>관계 정보 수정</Text>
-                <MaterialIcons name="chevron-right" size={24} color="#A0A0A0" />
-              </TouchableOpacity>
-            </Link>
-            <View style={styles.separator} />
-
-            {/* Strategy Setting Link */}
-            <Link href="/settings/strategy" asChild>
-              <TouchableOpacity style={styles.settingItem}>
-                <Ionicons name="bulb-outline" size={22} color="#A0A0A0" style={styles.settingIcon} />
-                <Text style={styles.settingText}>전략 스타일 설정</Text>
-                <MaterialIcons name="chevron-right" size={24} color="#A0A0A0" />
-              </TouchableOpacity>
-            </Link>
-            {/* Separator after strategy setting if other settings exist */}
-            {otherSettings.length > 0 && <View style={styles.separator} />}
-
-            {/* Rest of the settings */}
-            {otherSettings.map((item, index) => (
-              <React.Fragment key={item.id}>
-                <TouchableOpacity style={styles.settingItem} onPress={() => handleNotImplemented(item.title)}>
-                  <Ionicons name={item.icon} size={22} color="#A0A0A0" style={styles.settingIcon} />
-                  <Text style={styles.settingText}>{item.title}</Text>
-                  <MaterialIcons name="chevron-right" size={24} color="#A0A0A0" />
-                </TouchableOpacity>
-                {index < otherSettings.length - 1 && <View style={styles.separator} />}
-              </React.Fragment>
-            ))}
-          </View>
+          <Link href="/settings/onboarding" asChild>
+            <TouchableOpacity style={styles.settingItem}>
+              <Ionicons name="settings-outline" size={22} color="#A0A0A0" style={styles.settingIcon} />
+              <Text style={styles.settingText}>온보딩 설정</Text>
+              <Ionicons name="chevron-forward-outline" size={22} color="#A0A0A0" />
+            </TouchableOpacity>
+          </Link>
+          <Link href="/settings/relationship" asChild>
+            <TouchableOpacity style={styles.settingItem}>
+              <Ionicons name="people-outline" size={22} color="#A0A0A0" style={styles.settingIcon} />
+              <Text style={styles.settingText}>관계 정보 수정</Text>
+              <Ionicons name="chevron-forward-outline" size={22} color="#A0A0A0" />
+            </TouchableOpacity>
+          </Link>
+          <Link href="/settings/strategy" asChild>
+            <TouchableOpacity style={styles.settingItem}>
+              <Ionicons name="bulb-outline" size={22} color="#A0A0A0" style={styles.settingIcon} />
+              <Text style={styles.settingText}>전략 스타일 설정</Text>
+              <Ionicons name="chevron-forward-outline" size={22} color="#A0A0A0" />
+            </TouchableOpacity>
+          </Link>
+          <TouchableOpacity style={styles.settingItem}>
+            <Ionicons name="notifications-outline" size={22} color="#A0A0A0" style={styles.settingIcon} />
+            <Text style={styles.settingText}>알림 설정</Text>
+            <Ionicons name="chevron-forward-outline" size={22} color="#A0A0A0" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.settingItem}>
+            <Ionicons name="lock-closed-outline" size={22} color="#A0A0A0" style={styles.settingIcon} />
+            <Text style={styles.settingText}>데이터 및 개인정보</Text>
+            <Ionicons name="chevron-forward-outline" size={22} color="#A0A0A0" />
+          </TouchableOpacity>
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <TouchableOpacity 
+          style={styles.logoutButton}
+          onPress={() => {
+            logout();
+          }}
+        >
           <Text style={styles.logoutButtonText}>로그아웃</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -261,6 +248,43 @@ const styles = StyleSheet.create({
     color: '#FF4D4D', // Brighter red text
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  settingsSection: {
+    marginBottom: 30,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+  },
+  menuText: {
+    flex: 1,
+    color: '#FFFFFF',
+    fontSize: 16,
+  },
+  premiumSection: {
+    marginBottom: 30,
+  },
+  premiumCard: {
+    backgroundColor: '#1C1C1E',
+    borderRadius: 10,
+    padding: 15,
+  },
+  premiumCardTitle: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  premiumFeatures: {
+    marginBottom: 10,
+  },
+  premiumFeatureText: {
+    color: '#A0A0A0',
+    fontSize: 14,
+    marginBottom: 5,
+    marginLeft: 5,
   },
 });
 
