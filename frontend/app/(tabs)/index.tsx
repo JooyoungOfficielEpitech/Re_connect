@@ -47,8 +47,17 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-       <StatusBar barStyle="light-content" />
-       <ScrollView contentContainerStyle={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Re:connect</Text>
+        <TouchableOpacity 
+          style={styles.profileButton}
+          onPress={() => router.push('/profile')}
+        >
+          <Ionicons name="person-circle-outline" size={28} color={Colors.dark.text} />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.container}>
         {/* Current Status Section */}
         <View style={styles.statusSection}>
           <Text style={styles.sectionLabel}>현재 상태</Text>
@@ -113,7 +122,6 @@ export default function HomeScreen() {
             <Ionicons name="chevron-forward" size={24} color={Colors.dark.text} />
           </View>
         </TouchableOpacity>
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -122,7 +130,22 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#121212', // Dark background
+    backgroundColor: Colors.dark.background,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: Colors.light.blue,
+  },
+  profileButton: {
+    padding: 4,
   },
   container: {
     padding: 20,
