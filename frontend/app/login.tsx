@@ -22,7 +22,7 @@ const LoginScreen = () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
       console.log('Login successful for:', email);
-      login();
+      await login(email, password);
     } catch (error) {
       console.error('Login failed:', error);
       Alert.alert('로그인 실패', '이메일 또는 비밀번호가 올바르지 않습니다.');

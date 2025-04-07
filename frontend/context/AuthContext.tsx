@@ -1,64 +1,82 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { userApi } from '../src/services/api';
 
-// Define the shape of the context data
-interface AuthContextData {
+interface User {
+  id: number;
+  email: string;
+  username: string;
+  full_name: string;
+}
+
+interface AuthContextType {
   isAuthenticated: boolean;
-  isLoading: boolean; // Add loading state for initial check
-  login: () => void; // Simple mock login function
-  logout: () => void; // Simple mock logout function
+  user: User | null;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
 }
 
-// Create the context with a default value
-const AuthContext = createContext<AuthContextData>({} as AuthContextData);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Create the provider component
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // Start as loading
+  const [user, setUser] = useState<User | null>(null);
 
-  // Simulate checking stored auth status on initial load
   useEffect(() => {
-    // In a real app, you would check AsyncStorage or secure storage here
-    // For now, just simulate a delay and assume not logged in initially
-    const timer = setTimeout(() => {
-      setIsAuthenticated(false); // Assume not logged in initially
-      setIsLoading(false);
-    }, 500); // Simulate 0.5 second check
+    const checkAuth = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        if (token) {
+          const userData = await userApi.getMe();
+          setUser(userData);
+          setIsAuthenticated(true);
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        await AsyncStorage.removeItem('token');
+        setIsAuthenticated(false);
+        setUser(null);
+      }
+    };
 
-    return () => clearTimeout(timer);
+    checkAuth();
   }, []);
 
-  // Mock login function
-  const login = () => {
-    console.log('Mock login executed');
-    // In a real app, set token, user info, etc.
-    setIsAuthenticated(true);
-    // Optionally, navigate here or let useProtectedRoute handle it
+  const login = async (email: string, password: string) => {
+    try {
+      const response = await userApi.login(email, password);
+      if (response.access_token) {
+        await AsyncStorage.setItem('token', response.access_token);
+        const userData = await userApi.getMe();
+        setUser(userData);
+        setIsAuthenticated(true);
+      }
+    } catch (error) {
+      console.error('Login failed:', error);
+      throw error;
+    }
   };
 
-  // Mock logout function
-  const logout = () => {
-    console.log('Mock logout executed');
-    // Clear stored token, user info, etc.
-    setIsAuthenticated(false);
-    // Navigation to login will be handled by useProtectedRoute
+  const logout = async () => {
+    try {
+      await AsyncStorage.removeItem('token');
+      setIsAuthenticated(false);
+      setUser(null);
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// Custom hook to use the auth context
-export const useAuth = (): AuthContextData => {
+export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
