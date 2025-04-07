@@ -1,4 +1,4 @@
-import React, { useState, Dispatch, SetStateAction } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -13,64 +13,9 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'; // Import icons
-
-// Define types for Checkbox props
-interface CheckboxProps {
-  label: string;
-  value: boolean;
-  onValueChange: (newValue: boolean) => void;
-  linkText?: string; // Optional
-  onLinkPress?: () => void; // Optional
-}
-
-// Basic Checkbox Component with types
-const Checkbox: React.FC<CheckboxProps> = ({ label, value, onValueChange, linkText, onLinkPress }) => (
-  <View style={styles.checkboxContainer}>
-    <TouchableOpacity onPress={() => onValueChange(!value)} style={styles.checkboxBase}>
-      {value && <Ionicons name="checkmark" size={20} color="#4A90E2" />}
-    </TouchableOpacity>
-    <Text style={styles.checkboxLabel}>{label}</Text>
-    {linkText && onLinkPress && ( // Ensure onLinkPress is also checked
-      <TouchableOpacity onPress={onLinkPress} style={styles.checkboxLinkContainer}>
-        <Text style={styles.checkboxLink}>{linkText}</Text>
-      </TouchableOpacity>
-    )}
-  </View>
-);
-
-// Define types for PasswordStrengthMeter props
-interface PasswordStrengthMeterProps {
-  password: string;
-}
-
-// Basic Password Strength Meter with types
-const PasswordStrengthMeter: React.FC<PasswordStrengthMeterProps> = ({ password }) => {
-  const getStrength = () => {
-    let score = 0;
-    if (!password) return score;
-    if (password.length >= 8) score++;
-    if (/[A-Z]/.test(password)) score++;
-    if (/[a-z]/.test(password)) score++;
-    if (/[0-9]/.test(password)) score++;
-    if (/[^A-Za-z0-9]/.test(password)) score++; // Special character
-    return Math.min(score, 4); // Cap score at 4 for simplicity
-  };
-
-  const strength = getStrength();
-  const strengthPercentage = (strength / 4) * 100;
-  const barColor = strength <= 1 ? '#ff4d4f' : strength <= 2 ? '#ffa940' : strength <= 3 ? '#faad14' : '#52c41a';
-
-  return (
-    <View style={styles.strengthContainer}>
-      <View style={styles.strengthBarBackground}>
-        <View style={[styles.strengthBar, { width: `${strengthPercentage}%`, backgroundColor: barColor }]} />
-      </View>
-      <Text style={styles.strengthText}>
-        {strength <= 1 ? '숫자와 특수문자 추가 시 더 안전합니다' : '비밀번호 강도'}
-      </Text>
-    </View>
-  );
-};
+import { Checkbox } from '@/components/Checkbox';
+import { PasswordStrengthMeter } from '@/components/PasswordStrengthMeter';
+import { userApi } from '@/services/api';
 
 const SignUpScreen = () => {
   const [email, setEmail] = useState('');
@@ -84,19 +29,66 @@ const SignUpScreen = () => {
 
   const router = useRouter();
 
-  const handleSignUp = () => {
-    if (!agreeTerms || !agreePrivacy) {
-        Alert.alert('동의 필요', '필수 약관에 동의해주세요.');
-        return;
+  const handleSignUp = async () => {
+    // 이메일 형식 검증
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('오류', '올바른 이메일 형식이 아닙니다.');
+      return;
     }
+
+    // 비밀번호 검증
+    if (password.length < 8) {
+      Alert.alert('오류', '비밀번호는 8자 이상이어야 합니다.');
+      return;
+    }
+
     if (password !== confirmPassword) {
       Alert.alert('오류', '비밀번호가 일치하지 않습니다.');
       return;
     }
-    // TODO: Implement sign up logic (mock or actual API call)
-    console.log('Sign up attempt with:', email, password, { agreeTerms, agreePrivacy, agreeMarketing });
-    Alert.alert('회원가입 성공 (가상)', '온보딩을 시작합니다.');
-    router.replace('/onboarding/step1');
+
+    if (!agreeTerms || !agreePrivacy) {
+      Alert.alert('오류', '필수 약관에 동의해주세요.');
+      return;
+    }
+
+    try {
+      // 사용자 이름 생성 (이메일의 @ 앞부분 + 랜덤 숫자)
+      const baseUsername = email.split('@')[0];
+      const randomNum = Math.floor(Math.random() * 1000);
+      const username = baseUsername.length >= 3 ? baseUsername : `${baseUsername}${randomNum}`;
+      
+      // API 요청 데이터 로깅
+      const signupData = {
+        email,
+        password,
+        username,
+        full_name: username, // 사용자 이름을 full_name으로도 사용
+      };
+      console.log('회원가입 요청 데이터:', signupData);
+
+      // 실제 회원가입 API 호출
+      const response = await userApi.signup(signupData);
+      console.log('회원가입 응답:', response);
+
+      // 회원가입 성공 시 온보딩 페이지로 이동
+      Alert.alert('회원가입 성공', '온보딩을 시작합니다.');
+      router.replace('/onboarding/step1');
+    } catch (error: any) {
+      console.error('회원가입 실패:', error);
+      console.error('에러 응답:', error.response?.data);
+      
+      if (error.response?.status === 422) {
+        const errorMessage = error.response.data.detail || '입력하신 정보를 다시 확인해주세요.';
+        Alert.alert('회원가입 실패', errorMessage);
+      } else if (error.response?.status === 400) {
+        const errorMessage = error.response.data.detail || '이미 가입된 이메일입니다.';
+        Alert.alert('회원가입 실패', errorMessage);
+      } else {
+        Alert.alert('회원가입 실패', '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      }
+    }
   };
 
     const handleGoogleSignUp = () => {
