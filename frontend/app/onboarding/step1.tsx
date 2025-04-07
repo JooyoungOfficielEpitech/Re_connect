@@ -8,12 +8,14 @@ import {
   ScrollView,
   Alert,
   Platform,
-  Modal
+  Modal,
+  ActivityIndicator
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons'; // Use appropriate icons
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker'; // Import DateTimePicker
 import { Picker } from '@react-native-picker/picker'; // Import Picker
+import { onboardingApi } from '../../services/api';
 
 // Define types for OptionButton props
 interface OptionButtonProps {
@@ -65,6 +67,7 @@ const OnboardingStep1 = () => {
   const [showDurationModal, setShowDurationModal] = useState(false); // State for duration modal visibility
   const [selectedYears, setSelectedYears] = useState(1); // Default selected years in picker
   const [selectedMonths, setSelectedMonths] = useState(3); // Default selected months in picker
+  const [isLoading, setIsLoading] = useState(false); // Loading state for API call
 
   const calculateDateDifference = (selectedDate: Date): string => {
       const today = new Date();
@@ -131,15 +134,45 @@ const OnboardingStep1 = () => {
         setShowDurationModal(false);
     };
 
-  const handleNext = () => {
-    // TODO: Save data (mock or API call)
-    console.log('Onboarding Step 1 Data:', { breakupTime: breakupTimeText, relationshipDuration, myTendency, partnerTendency });
-    router.push('/onboarding/step2');
+  const handleNext = async () => {
+    if (!breakupDate || !myTendency || !partnerTendency) {
+      Alert.alert('알림', '모든 항목을 입력해주세요.');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const step1Data = {
+        breakup_date: breakupDate.toISOString().split('T')[0],
+        relationship_years: selectedYears,
+        relationship_months: selectedMonths,
+        my_tendency: myTendency,
+        partner_tendency: partnerTendency,
+      };
+
+      // API 호출
+      await onboardingApi.saveStep1(step1Data);
+      
+      // 성공 시 다음 단계로 이동
+      router.push('/onboarding/step2');
+    } catch (error: any) {
+      console.error('온보딩 1단계 저장 실패:', error);
+      if (error === '인증이 필요합니다.') {
+        // 인증 에러인 경우 로그인 페이지로 이동
+        router.replace('/login');
+      } else {
+        Alert.alert(
+          '오류',
+          '데이터 저장 중 문제가 발생했습니다. 다시 시도해주세요.'
+        );
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSkip = () => {
     Alert.alert('건너뛰기', '온보딩을 건너뛰고 메인 화면으로 이동합니다.');
-    // TODO: Set default onboarding data if necessary before navigating
     router.replace('/(tabs)'); // Navigate to main app
   };
 
@@ -149,129 +182,137 @@ const OnboardingStep1 = () => {
         <Text style={styles.title}>관계 정보를 입력해주세요</Text>
         <Text style={styles.subtitle}>더 정확한 전략과 메시지 생성을 위해 필요해요</Text>
 
-        {/* Progress Bar Placeholder - implement actual progress bar later */}
+        {/* Progress Bar */}
         <View style={styles.progressBarContainer}>
           <View style={[styles.progressBar, { width: '33.3%' }]} />
         </View>
 
-        {/* Pass the formatted text and trigger the date picker */}
-        <InputRow label="이별 시점" value={breakupTimeText} onPress={() => setShowDatePicker(true)} />
-        {/* Open the modal on press */}
-        <InputRow label="관계 기간" value={relationshipDuration} onPress={openDurationModal} />
+        {/* 이별 시점 선택 */}
+        <Text style={styles.sectionTitle}>이별 시점</Text>
+        <TouchableOpacity style={styles.dateSelector} onPress={() => setShowDatePicker(true)}>
+          <Text style={styles.dateSelectorText}>{breakupTimeText}</Text>
+          <MaterialIcons name="calendar-today" size={20} color="#888" />
+        </TouchableOpacity>
 
-        <View style={styles.tendencyGroup}>
-            <Text style={styles.label}>나의 성향</Text>
-            <View style={styles.tendencyButtons}>
-                <OptionButton label="분석적" selected={myTendency === 'analytical'} onPress={() => setMyTendency('analytical')} />
-                <OptionButton label="감정적" selected={myTendency === 'emotional'} onPress={() => setMyTendency('emotional')} />
-            </View>
+        {/* 관계 기간 선택 */}
+        <Text style={styles.sectionTitle}>관계 기간</Text>
+        <TouchableOpacity style={styles.dateSelector} onPress={openDurationModal}>
+          <Text style={styles.dateSelectorText}>{relationshipDuration}</Text>
+          <MaterialIcons name="access-time" size={20} color="#888" />
+        </TouchableOpacity>
+
+        {/* 성향 선택 */}
+        <Text style={styles.sectionTitle}>나의 성향</Text>
+        <View style={styles.tendencyContainer}>
+          <OptionButton
+            label="분석적"
+            selected={myTendency === 'analytical'}
+            onPress={() => setMyTendency('analytical')}
+          />
+          <OptionButton
+            label="감성적"
+            selected={myTendency === 'emotional'}
+            onPress={() => setMyTendency('emotional')}
+          />
         </View>
 
-        <View style={styles.tendencyGroup}>
-            <Text style={styles.label}>상대방의 성향</Text>
-            <View style={styles.tendencyButtons}>
-                <OptionButton label="분석적" selected={partnerTendency === 'analytical'} onPress={() => setPartnerTendency('analytical')} />
-                <OptionButton label="감정적" selected={partnerTendency === 'emotional'} onPress={() => setPartnerTendency('emotional')} />
-            </View>
+        <Text style={styles.sectionTitle}>상대방의 성향</Text>
+        <View style={styles.tendencyContainer}>
+          <OptionButton
+            label="분석적"
+            selected={partnerTendency === 'analytical'}
+            onPress={() => setPartnerTendency('analytical')}
+          />
+          <OptionButton
+            label="감성적"
+            selected={partnerTendency === 'emotional'}
+            onPress={() => setPartnerTendency('emotional')}
+          />
         </View>
 
-         <View style={styles.infoBanner}>
-            <Ionicons name="alert-circle-outline" size={20} color="#FFCC00" style={{ marginRight: 10 }}/>
-            <View style={{ flex: 1 }}>
-                <Text style={styles.infoBannerTitle}>모든 정보는 개인 맞춤형 전략 수립에만 사용됩니다</Text>
-                <Text style={styles.infoBannerSubtitle}>더 많은 정보를 제공할수록 더 정확한 예측이 가능합니다</Text>
-            </View>
-        </View>
-
-        {/* AI Prediction Banner Placeholder */}
-        <View style={styles.aiBanner}>
-             <Ionicons name="hardware-chip-outline" size={18} color="#4A90E2" style={{ marginRight: 8 }}/>
-            <Text style={styles.aiBannerText}>AI가 상대방의 성향을 예측 중입니다...</Text>
-        </View>
-
-         {/* Conditionally render the DateTimePicker */}
+        {/* Date Picker Modal */}
         {showDatePicker && (
           <DateTimePicker
-            testID="dateTimePicker"
             value={breakupDate}
-            mode={'date'}
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'} // Spinner for iOS, default for Android
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
             onChange={onChangeDate}
-            maximumDate={new Date()} // Prevent selecting future dates
-            // locale="ko-KR" // Locale might cause issues depending on setup, test carefully
+            maximumDate={new Date()} // Prevent future dates
           />
         )}
-      </ScrollView>
 
-       {/* Duration Picker Modal */}
+        {/* Duration Picker Modal */}
         <Modal
-            animationType="slide"
-            transparent={true}
-            visible={showDurationModal}
-            onRequestClose={() => {
-                setShowDurationModal(!showDurationModal);
-            }}
+          visible={showDurationModal}
+          transparent={true}
+          animationType="slide"
         >
-            <View style={styles.modalOverlay}>
-                <View style={styles.modalContent}>
-                    <Text style={styles.modalTitle}>관계 기간 선택</Text>
-                    <View style={styles.pickerContainer}>
-                        {/* Years Picker */}
-                        <Picker
-                            // Pass selectedValue as string
-                            selectedValue={String(selectedYears)}
-                            style={styles.picker}
-                            itemStyle={styles.pickerItem} // Style for individual items
-                            // Convert itemValue back to number for state update
-                            onValueChange={(itemValue) => setSelectedYears(Number(itemValue))}
-                        >
-                            {[...Array(21).keys()].map(year => ( // 0 to 20 years
-                                // Pass value as string
-                                <Picker.Item key={year} label={`${year}년`} value={String(year)} />
-                            ))}
-                        </Picker>
-                        {/* Months Picker */}
-                         <Picker
-                            // Pass selectedValue as string
-                            selectedValue={String(selectedMonths)}
-                            style={styles.picker}
-                            itemStyle={styles.pickerItem}
-                            // Convert itemValue back to number for state update
-                            onValueChange={(itemValue) => setSelectedMonths(Number(itemValue))}
-                        >
-                             {[...Array(12).keys()].map(month => ( // 0 to 11 months
-                                // Pass value as string
-                                <Picker.Item key={month} label={`${month}개월`} value={String(month)} />
-                            ))}
-                        </Picker>
-                    </View>
-                    <View style={styles.modalButtonContainer}>
-                        <TouchableOpacity
-                            style={[styles.modalButton, styles.modalCancelButton]}
-                            onPress={() => setShowDurationModal(false)}
-                        >
-                            <Text style={styles.modalButtonText}>취소</Text>
-                        </TouchableOpacity>
-                         <TouchableOpacity
-                            style={[styles.modalButton, styles.modalConfirmButton]}
-                            onPress={handleDurationConfirm}
-                        >
-                            <Text style={styles.modalButtonText}>확인</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>관계 기간 선택</Text>
+              
+              <View style={styles.pickerContainer}>
+                <Text style={styles.pickerLabel}>년</Text>
+                <Picker
+                  selectedValue={String(selectedYears)}
+                  style={styles.picker}
+                  onValueChange={(itemValue) => setSelectedYears(Number(itemValue))}
+                >
+                  {Array.from({ length: 11 }, (_, i) => (
+                    <Picker.Item key={i} label={`${i}년`} value={String(i)} />
+                  ))}
+                </Picker>
+              </View>
+              
+              <View style={styles.pickerContainer}>
+                <Text style={styles.pickerLabel}>개월</Text>
+                <Picker
+                  selectedValue={String(selectedMonths)}
+                  style={styles.picker}
+                  onValueChange={(itemValue) => setSelectedMonths(Number(itemValue))}
+                >
+                  {Array.from({ length: 12 }, (_, i) => (
+                    <Picker.Item key={i} label={`${i}개월`} value={String(i)} />
+                  ))}
+                </Picker>
+              </View>
+              
+              <View style={styles.modalButtons}>
+                <TouchableOpacity 
+                  style={[styles.modalButton, styles.cancelButton]} 
+                  onPress={() => setShowDurationModal(false)}
+                >
+                  <Text style={styles.cancelButtonText}>취소</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.modalButton, styles.confirmButton]} 
+                  onPress={handleDurationConfirm}
+                >
+                  <Text style={styles.confirmButtonText}>확인</Text>
+                </TouchableOpacity>
+              </View>
             </View>
+          </View>
         </Modal>
-
+      </ScrollView>
+      
       {/* Bottom Navigation Buttons */}
-       <View style={styles.bottomNav}>
-            <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
-                <Text style={styles.skipButtonText}>건너뛰기</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-                <Text style={styles.nextButtonText}>다음</Text>
-            </TouchableOpacity>
-        </View>
+      <View style={styles.bottomNav}>
+        <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
+          <Text style={styles.skipButtonText}>건너뛰기</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.nextButton, isLoading && styles.disabledButton]} 
+          onPress={handleNext}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={styles.nextButtonText}>다음</Text>
+          )}
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
@@ -437,73 +478,107 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  modalOverlay: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: 'rgba(0, 0, 0, 0.7)', // Dimmed background
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   modalContent: {
-      width: '85%',
-      backgroundColor: '#282828', // Dark background for modal
-      borderRadius: 15,
-      padding: 20,
-      alignItems: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 4,
-      elevation: 5,
+    width: '85%',
+    backgroundColor: '#282828',
+    borderRadius: 15,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
   modalTitle: {
-      fontSize: 18,
-      fontWeight: 'bold',
-      color: '#FFF',
-      marginBottom: 20,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFF',
+    marginBottom: 20,
   },
   pickerContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-around',
-      width: '100%',
-      marginBottom: 20,
-      // Note: Picker styling might be limited and platform-dependent
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginBottom: 20,
   },
   picker: {
-      flex: 1, // Take half width
-      // Height might be needed depending on platform
-      height: Platform.OS === 'ios' ? 180 : 50, // Adjust height as needed
-      color: Platform.OS === 'ios' ? '#FFF' : '#000', // iOS text color directly, Android needs itemStyle
-      // backgroundColor: '#333', // Background for picker itself might not work well cross-platform
+    flex: 1,
+    height: Platform.OS === 'ios' ? 180 : 50,
+    color: Platform.OS === 'ios' ? '#FFF' : '#000',
   },
-   pickerItem: {
-      // Styling individual items, especially color on Android
-       color: '#FFF', // Try setting color here for Android items
-       fontSize: 18, // Adjust font size if needed
-       height: Platform.OS === 'ios' ? 180 : 50, // Match picker height if possible
-   },
-  modalButtonContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      width: '100%',
-      marginTop: 10,
+  pickerItem: {
+    color: '#FFF',
+    fontSize: 18,
+    height: Platform.OS === 'ios' ? 180 : 50,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 10,
   },
   modalButton: {
-      flex: 1,
-      paddingVertical: 12,
-      borderRadius: 10,
-      alignItems: 'center',
-      marginHorizontal: 5,
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginHorizontal: 5,
   },
-  modalCancelButton: {
-       backgroundColor: '#444', // Darker grey for cancel
+  cancelButton: {
+    backgroundColor: '#444',
   },
-  modalConfirmButton: {
-       backgroundColor: '#4A90E2', // Blue for confirm
+  confirmButton: {
+    backgroundColor: '#4A90E2',
   },
-  modalButtonText: {
-      color: '#FFF',
-      fontSize: 16,
-      fontWeight: 'bold',
+  cancelButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  confirmButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  disabledButton: {
+    backgroundColor: '#444',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFF',
+    marginBottom: 8,
+  },
+  dateSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#282828',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 20,
+  },
+  dateSelectorText: {
+    color: '#FFF',
+    fontSize: 16,
+    marginRight: 10,
+  },
+  tendencyContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  pickerLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#FFF',
+    marginBottom: 10,
   },
 });
 

@@ -1,6 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import List, Optional, Dict
 from enum import Enum
+from datetime import date
+from ..models.onboarding import TendencyType, BreakupReason, StrategyType
 
 class OnboardingStep(int, Enum):
     PROFILE = 1
@@ -27,4 +29,34 @@ class UserProfileResponse(UserProfileBase):
     onboarding_completed: int
 
     class Config:
-        orm_mode = True 
+        orm_mode = True
+
+class OnboardingStep1(BaseModel):
+    breakup_date: date
+    relationship_years: int
+    relationship_months: int
+    my_tendency: TendencyType
+    partner_tendency: TendencyType
+
+class OnboardingStep2(BaseModel):
+    breakup_reason: BreakupReason
+
+class OnboardingStep3(BaseModel):
+    strategy_type: StrategyType
+
+class OnboardingCreate(OnboardingStep1, OnboardingStep2, OnboardingStep3):
+    pass
+
+class OnboardingResponse(BaseModel):
+    id: int
+    user_id: int
+    breakup_date: date
+    relationship_years: int
+    relationship_months: int
+    my_tendency: TendencyType
+    partner_tendency: TendencyType
+    breakup_reason: Optional[BreakupReason] = None
+    strategy_type: Optional[StrategyType] = None
+
+    class Config:
+        from_attributes = True 

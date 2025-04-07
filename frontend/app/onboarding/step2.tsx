@@ -7,10 +7,12 @@ import {
   SafeAreaView,
   ScrollView,
   Platform,
-  Alert
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { onboardingApi } from '../../services/api';
 
 // Define types for RadioButton props
 interface RadioButtonProps {
@@ -37,6 +39,7 @@ const RadioButton: React.FC<RadioButtonProps> = ({ label, selected, onPress }) =
 const OnboardingStep2 = () => {
   const router = useRouter();
   const [reason, setReason] = useState<string | null>(null); // State to hold selected reason
+  const [isLoading, setIsLoading] = useState(false); // Loading state for API call
 
   const reasons = [
     '의사소통 문제',
@@ -46,14 +49,34 @@ const OnboardingStep2 = () => {
     '기타'
   ];
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!reason) {
         Alert.alert('선택 필요', '이별의 주된 원인을 선택해주세요.');
         return;
     }
-    // TODO: Save data (mock or API call)
-    console.log('Onboarding Step 2 Data:', { reason });
-    router.push('/onboarding/step3');
+    
+    try {
+      setIsLoading(true);
+      
+      // API 호출을 위한 데이터 준비
+      const step2Data = {
+        breakup_reason: reason
+      };
+      
+      // API 호출
+      await onboardingApi.saveStep2(step2Data);
+      
+      // 성공 시 다음 단계로 이동
+      router.push('/onboarding/step3');
+    } catch (error) {
+      console.error('온보딩 2단계 저장 실패:', error);
+      Alert.alert(
+        '오류',
+        '데이터 저장 중 문제가 발생했습니다. 다시 시도해주세요.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleBack = () => {
@@ -95,8 +118,16 @@ const OnboardingStep2 = () => {
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
           <Text style={styles.backButtonText}>이전</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-          <Text style={styles.nextButtonText}>다음</Text>
+        <TouchableOpacity 
+          style={[styles.nextButton, isLoading && styles.disabledButton]} 
+          onPress={handleNext}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={styles.nextButtonText}>다음</Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -243,6 +274,9 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  disabledButton: {
+    backgroundColor: '#444',
   },
 });
 

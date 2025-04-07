@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { onboardingApi } from '../../services/api';
 
 // Define types for StrategyOption props
 interface StrategyOptionProps {
@@ -35,7 +36,7 @@ const StrategyOption: React.FC<StrategyOptionProps> = ({ title, description, sel
 const OnboardingStep3 = () => {
   const router = useRouter();
   const [strategy, setStrategy] = useState<string | null>('balanced'); // Default selection
-  const [isProcessing, setIsProcessing] = useState(false); // State for mock processing
+  const [isLoading, setIsLoading] = useState(false); // Loading state for API call
 
   const strategies = {
     analytical: {
@@ -57,20 +58,34 @@ const OnboardingStep3 = () => {
       Alert.alert('선택 필요', '전략 스타일을 선택해주세요.');
       return;
     }
-    setIsProcessing(true);
-    // TODO: Save data (mock or API call)
-    console.log('Onboarding Step 3 Data:', { strategy });
     
-    // Simulate API call/processing delay
-    await new Promise(resolve => setTimeout(resolve, 1500)); 
-    
-    setIsProcessing(false);
-    Alert.alert('온보딩 완료', 'Re:connect 사용 준비가 완료되었습니다!');
-    router.replace('/(tabs)'); // Navigate to the main app screen
+    try {
+      setIsLoading(true);
+      
+      // API 호출을 위한 데이터 준비
+      const step3Data = {
+        strategy_type: strategy
+      };
+      
+      // API 호출
+      await onboardingApi.saveStep3(step3Data);
+      
+      // 성공 시 메인 화면으로 이동
+      Alert.alert('온보딩 완료', 'Re:connect 사용 준비가 완료되었습니다!');
+      router.replace('/(tabs)'); // Navigate to the main app screen
+    } catch (error) {
+      console.error('온보딩 3단계 저장 실패:', error);
+      Alert.alert(
+        '오류',
+        '데이터 저장 중 문제가 발생했습니다. 다시 시도해주세요.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleBack = () => {
-    if (isProcessing) return; // Prevent going back while processing
+    if (isLoading) return; // Prevent going back while processing
     router.back();
   };
 
@@ -97,24 +112,28 @@ const OnboardingStep3 = () => {
         ))}
 
         {/* AI Processing Banner Placeholder */}
-         {isProcessing && (
-            <View style={styles.aiBanner}>
-                <ActivityIndicator size="small" color="#4A90E2" style={{ marginRight: 8 }} />
-                <Text style={styles.aiBannerText}>AI가 데이터를 분석하는 중입니다...</Text>
-            </View>
+         {isLoading && (
+          <View style={styles.aiBanner}>
+            <Ionicons name="hardware-chip-outline" size={18} color="#4A90E2" style={{ marginRight: 8 }}/>
+            <Text style={styles.aiBannerText}>AI가 전략을 생성 중입니다...</Text>
+          </View>
         )}
-
       </ScrollView>
+      
       {/* Bottom Navigation Buttons */}
       <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.backButton} onPress={handleBack} disabled={isProcessing}>
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
           <Text style={styles.backButtonText}>이전</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.completeButton} onPress={handleComplete} disabled={isProcessing}>
-          {isProcessing ? (
-              <ActivityIndicator color="#FFF" />
+        <TouchableOpacity 
+          style={[styles.completeButton, isLoading && styles.disabledButton]} 
+          onPress={handleComplete}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
           ) : (
-              <Text style={styles.completeButtonText}>완료</Text>
+            <Text style={styles.completeButtonText}>완료</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -247,6 +266,9 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  disabledButton: {
+    backgroundColor: '#444',
   },
 });
 

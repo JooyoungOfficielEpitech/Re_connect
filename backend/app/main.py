@@ -1,7 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .api import api_router
-from .db.database import init_db
+from .api import auth, users, missions, onboarding
+from .db.database import engine, Base
+
+# 데이터베이스 테이블 생성
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Re_Connect API",
@@ -19,11 +22,10 @@ app.add_middleware(
 )
 
 # API 라우터 등록
-app.include_router(api_router, prefix="/api")
-
-@app.on_event("startup")
-async def startup_event():
-    init_db()
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.include_router(users.router, prefix="/api/users", tags=["users"])
+app.include_router(missions.router, prefix="/api/missions", tags=["missions"])
+app.include_router(onboarding.router, prefix="/api/onboarding", tags=["onboarding"])
 
 @app.get("/")
 async def root():

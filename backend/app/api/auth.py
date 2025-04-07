@@ -1,6 +1,6 @@
 from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from ..core import security
 from ..core.deps import get_db
@@ -8,6 +8,7 @@ from ..models.user import User
 from ..schemas.user import UserCreate, UserResponse, Token
 
 router = APIRouter()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 
 @router.post("/signup", response_model=UserResponse)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
@@ -61,4 +62,29 @@ def login(
     access_token = security.create_access_token(
         data={"sub": user.email}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"} 
+    return {"access_token": access_token, "token_type": "bearer"}
+
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+) -> User:
+    """현재 인증된 사용자 가져오기"""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    try:
+        payload = security.decode_access_token(token)
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except Exception:
+        raise credentials_exception
+        
+    user = db.query(User).filter(User.email == email).first()
+    if user is None:
+        raise credentials_exception
+        
+    return user 

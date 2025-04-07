@@ -62,6 +62,35 @@ interface MissionResponse {
   user_id: number;
 }
 
+// 온보딩 관련 타입 정의
+interface OnboardingStep1Data {
+  breakup_date: string;
+  relationship_years: number;
+  relationship_months: number;
+  my_tendency: string;
+  partner_tendency: string;
+}
+
+interface OnboardingStep2Data {
+  breakup_reason: string;
+}
+
+interface OnboardingStep3Data {
+  strategy_type: string;
+}
+
+interface OnboardingResponse {
+  id: number;
+  user_id: number;
+  breakup_date: string;
+  relationship_years: number;
+  relationship_months: number;
+  my_tendency: string;
+  partner_tendency: string;
+  breakup_reason: string;
+  strategy_type: string;
+}
+
 // 미션 관련 API
 export const missionApi = {
   // 미션 목록 조회
@@ -98,38 +127,57 @@ export const missionApi = {
 export const userApi = {
   // 로그인
   login: async (email: string, password: string): Promise<LoginResponse> => {
-    const response = await api.post<LoginResponse>('/auth/login', 
-      new URLSearchParams({
-        username: email,
-        password: password,
-      }),
-      {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      }
-    );
-    if (response.data.access_token) {
-      await AsyncStorage.setItem('token', response.data.access_token);
-    }
+    const formData = new FormData();
+    formData.append('username', email);
+    formData.append('password', password);
+    
+    const response = await api.post<LoginResponse>('/auth/login', formData, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    });
+    
+    // 토큰 저장
+    await AsyncStorage.setItem('token', response.data.access_token);
     return response.data;
   },
-
+  
   // 회원가입
-  signup: async (data: { email: string; password: string; username: string; full_name: string }): Promise<UserResponse> => {
+  signup: async (data: { email: string; username: string; password: string; full_name: string }): Promise<UserResponse> => {
     const response = await api.post<UserResponse>('/auth/signup', data);
     return response.data;
   },
-
-  // 내 정보 조회
-  getMe: async (): Promise<UserResponse> => {
+  
+  // 사용자 정보 조회
+  getProfile: async (): Promise<UserResponse> => {
     const response = await api.get<UserResponse>('/users/me');
     return response.data;
   },
+};
 
-  // 내 정보 수정
-  updateMe: async (data: { full_name: string }): Promise<UserResponse> => {
-    const response = await api.put<UserResponse>('/users/me', data);
+// 온보딩 관련 API
+export const onboardingApi = {
+  // 온보딩 1단계 데이터 저장
+  saveStep1: async (data: OnboardingStep1Data): Promise<OnboardingResponse> => {
+    const response = await api.post<OnboardingResponse>('/onboarding/step1', data);
+    return response.data;
+  },
+  
+  // 온보딩 2단계 데이터 저장
+  saveStep2: async (data: OnboardingStep2Data): Promise<OnboardingResponse> => {
+    const response = await api.post<OnboardingResponse>('/onboarding/step2', data);
+    return response.data;
+  },
+  
+  // 온보딩 3단계 데이터 저장
+  saveStep3: async (data: OnboardingStep3Data): Promise<OnboardingResponse> => {
+    const response = await api.post<OnboardingResponse>('/onboarding/step3', data);
+    return response.data;
+  },
+  
+  // 온보딩 데이터 조회
+  getOnboarding: async (): Promise<OnboardingResponse> => {
+    const response = await api.get<OnboardingResponse>('/onboarding/');
     return response.data;
   },
 }; 

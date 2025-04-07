@@ -24,10 +24,29 @@ const getToken = async () => {
 // 요청 인터셉터 - 토큰 추가
 api.interceptors.request.use(
   async (config) => {
-    const token = await getToken();
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // 인증이 필요하지 않은 엔드포인트 목록
+    const publicEndpoints = [
+      '/auth/login',
+      '/auth/signup'
+      
+    ];
+
+    // 현재 요청의 URL이 공개 엔드포인트인지 확인
+    const isPublicEndpoint = publicEndpoints.some(endpoint => 
+      config.url?.includes(endpoint)
+    );
+
+    // 공개 엔드포인트가 아닌 경우에만 토큰 확인
+    if (!isPublicEndpoint) {
+      const token = await getToken();
+      if (!token) {
+        return Promise.reject('인증이 필요합니다.');
+      }
+      if (config.headers) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
+
     return config;
   },
   (error) => {
@@ -62,42 +81,149 @@ interface UserResponse {
   updated_at: string | null;
 }
 
+// 온보딩 관련 타입 정의
+interface OnboardingStep1Data {
+  breakup_date: string;
+  relationship_years: number;
+  relationship_months: number;
+  my_tendency: string;
+  partner_tendency: string;
+}
+
+interface OnboardingStep2Data {
+  breakup_reason: string;
+}
+
+interface OnboardingStep3Data {
+  strategy_type: string;
+}
+
+interface OnboardingResponse {
+  id: number;
+  user_id: number;
+  breakup_date: string;
+  relationship_years: number;
+  relationship_months: number;
+  my_tendency: string;
+  partner_tendency: string;
+  breakup_reason: string;
+  strategy_type: string;
+}
+
 // 사용자 관련 API
 export const userApi = {
   // 로그인
   login: async (email: string, password: string): Promise<LoginResponse> => {
-    const response = await api.post<LoginResponse>('/auth/login', 
-      new URLSearchParams({
-        username: email,
-        password: password,
-      }),
-      {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
+    try {
+      const response = await api.post<LoginResponse>('/auth/login', 
+        new URLSearchParams({
+          username: email,
+          password: password,
+        }),
+        {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+        }
+      );
+      if (response.data.access_token) {
+        await AsyncStorage.setItem('token', response.data.access_token);
       }
-    );
-    if (response.data.access_token) {
-      await AsyncStorage.setItem('token', response.data.access_token);
+      return response.data;
+    } catch (error) {
+      console.error('로그인 실패:', error);
+      throw error;
     }
-    return response.data;
   },
 
   // 회원가입
   signup: async (data: { email: string; password: string; username: string; full_name: string }): Promise<UserResponse> => {
-    const response = await api.post<UserResponse>('/auth/signup', data);
-    return response.data;
+    try {
+      const response = await api.post<UserResponse>('/auth/signup', data);
+      
+      // 회원가입 성공 후 자동 로그인
+      try {
+        const loginResponse = await userApi.login(data.email, data.password);
+        if (loginResponse.access_token) {
+          await AsyncStorage.setItem('token', loginResponse.access_token);
+        }
+      } catch (loginError) {
+        console.error('자동 로그인 실패:', loginError);
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('회원가입 실패:', error);
+      throw error;
+    }
   },
 
   // 내 정보 조회
   getMe: async (): Promise<UserResponse> => {
-    const response = await api.get<UserResponse>('/users/me');
-    return response.data;
+    try {
+      const response = await api.get<UserResponse>('/users/me');
+      return response.data;
+    } catch (error) {
+      console.error('사용자 정보 조회 실패:', error);
+      throw error;
+    }
   },
 
   // 내 정보 수정
   updateMe: async (data: { full_name: string }): Promise<UserResponse> => {
-    const response = await api.put<UserResponse>('/users/me', data);
-    return response.data;
+    try {
+      const response = await api.put<UserResponse>('/users/me', data);
+      return response.data;
+    } catch (error) {
+      console.error('사용자 정보 수정 실패:', error);
+      throw error;
+    }
+  },
+};
+
+// 온보딩 관련 API
+export const onboardingApi = {
+  // 온보딩 1단계 데이터 저장
+  saveStep1: async (data: OnboardingStep1Data): Promise<OnboardingResponse> => {
+    try {
+      const response = await api.post<OnboardingResponse>('/onboarding/step1', data);
+      return response.data;
+    } catch (error) {
+      console.error('온보딩 1단계 저장 실패:', error);
+      throw error;
+    }
+  },
+  
+  // 온보딩 2단계 데이터 저장
+  saveStep2: async (data: OnboardingStep2Data): Promise<OnboardingResponse> => {
+    try {
+      const response = await api.post<OnboardingResponse>('/onboarding/step2', data);
+      return response.data;
+    } catch (error) {
+      console.error('온보딩 2단계 저장 실패:', error);
+      throw error;
+    }
+  },
+  
+  // 온보딩 3단계 데이터 저장
+  saveStep3: async (data: OnboardingStep3Data): Promise<OnboardingResponse> => {
+    try {
+      const response = await api.post<OnboardingResponse>('/onboarding/step3', data);
+      return response.data;
+    } catch (error) {
+      console.error('온보딩 3단계 저장 실패:', error);
+      throw error;
+    }
+  },
+  
+  // 온보딩 데이터 조회
+  getOnboarding: async (): Promise<OnboardingResponse> => {
+    try {
+      const response = await api.get<OnboardingResponse>('/onboarding/');
+      return response.data;
+    } catch (error) {
+      console.error('온보딩 데이터 조회 실패:', error);
+      throw error;
+    }
   },
 }; 

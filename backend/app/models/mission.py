@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from ..db.database import Base
 
 class Mission(Base):
@@ -11,4 +12,7 @@ class Mission(Base):
     is_completed = Column(Boolean, default=False)
     user_id = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now()) 
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # 사용자 관계 추가
+    user = relationship("User", back_populates="missions") 
