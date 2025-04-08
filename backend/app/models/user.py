@@ -20,6 +20,7 @@ class User(Base):
     profile = relationship("UserProfile", back_populates="user", uselist=False)
     onboarding = relationship("Onboarding", back_populates="user", uselist=False)
     missions = relationship("Mission", back_populates="user")
+    messages = relationship("Message", back_populates="user")
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, username={self.username}, full_name={self.full_name})>" 

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import List, Optional, Dict
 from enum import Enum
 from datetime import date
@@ -28,8 +28,7 @@ class UserProfileResponse(UserProfileBase):
     user_id: int
     onboarding_completed: int
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class OnboardingStep1(BaseModel):
     breakup_date: date
@@ -58,5 +57,4 @@ class OnboardingResponse(BaseModel):
     breakup_reason: Optional[BreakupReason] = None
     strategy_type: Optional[StrategyType] = None
 
-    class Config:
-        from_attributes = True 
+    model_config = ConfigDict(from_attributes=True) 

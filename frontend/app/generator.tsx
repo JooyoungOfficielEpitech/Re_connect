@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,10 +10,12 @@ import {
   Alert,
   TextInput,
   ActivityIndicator,
-  StatusBar
+  StatusBar,
+  FlatList
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { messageApi, RecommendedGoal, GeneratedMessage } from '../services/api';
 
 // Define types for InputRow props (assuming from previous steps)
 interface InputRowProps {
@@ -69,33 +71,74 @@ const Checkbox: React.FC<CheckboxProps> = ({ label, value, onValueChange }) => (
   </View>
 );
 
+// 추천 목표 항목 컴포넌트
+interface RecommendedGoalItemProps {
+  goal: RecommendedGoal;
+}
+
+const RecommendedGoalItem: React.FC<RecommendedGoalItemProps> = ({ goal }) => (
+  <View style={styles.goalItem}>
+    <View style={styles.goalItemContent}>
+      <Text style={styles.goalItemTitle}>{goal.name}</Text>
+      <Text style={styles.goalItemDescription}>{goal.description}</Text>
+      <Text style={styles.goalItemReason}>{goal.reason}</Text>
+    </View>
+  </View>
+);
+
 const MessageGeneratorScreen = () => {
   const router = useRouter();
-  const [messageType, setMessageType] = useState('첫 연락 (이별 후 28일)'); // Mock data
+  const [messagePurpose, setMessagePurpose] = useState(''); // 메시지 목적
   const [toneStyle, setToneStyle] = useState('logical'); // logical, emotional, curious
-  const [goalLightConversation, setGoalLightConversation] = useState(true);
-  const [goalRecallMemory, setGoalRecallMemory] = useState(false);
-  const [generatedMessage, setGeneratedMessage] = useState('안녕 오랜만이야. 지난번에 네가 추천해줬던 그 책 드디어 읽어봤는데...'); // Mock generated message
-  const [prediction, setPrediction] = useState('68%'); // Mock prediction
-  const [warning, setWarning] = useState<string | null>('약간의 감정적 자극이 있을 수 있음'); // Allow string or null
-  const [isGenerating, setIsGenerating] = useState(false); // State for generation loading
+  const [recommendedGoals, setRecommendedGoals] = useState<RecommendedGoal[]>([]);
+  const [generatedMessage, setGeneratedMessage] = useState(''); // 생성된 메시지
+  const [prediction, setPrediction] = useState(''); // 긍정적 반응 예측
+  const [warning, setWarning] = useState<string | null>(null); // 경고 메시지
+  const [isGenerating, setIsGenerating] = useState(false); // 메시지 생성 중 상태
+  const [isLoadingGoals, setIsLoadingGoals] = useState(true); // 목표 로딩 중 상태
+
+  // 추천 목표 목록 가져오기
+  useEffect(() => {
+    const fetchRecommendedGoals = async () => {
+      try {
+        setIsLoadingGoals(true);
+        const goalsData = await messageApi.getRecommendedGoals();
+        setRecommendedGoals(goalsData);
+      } catch (error) {
+        console.error('추천 목표를 가져오는 중 오류 발생:', error);
+        Alert.alert('오류', '추천 목표를 가져오는 중 문제가 발생했습니다.');
+      } finally {
+        setIsLoadingGoals(false);
+      }
+    };
+
+    fetchRecommendedGoals();
+  }, []);
 
   const selectMessageType = () => alert('메시지 유형 선택 (구현 예정)');
 
   const handleGenerate = async () => {
-    if (!messageType || !toneStyle || !goalLightConversation || !goalRecallMemory) {
-      Alert.alert('입력 오류', '모든 필드를 입력해주세요.');
+    if (!messagePurpose || !toneStyle) {
+      Alert.alert('입력 오류', '메시지 목적을 입력해주세요.');
       return;
     }
+    
     setIsGenerating(true);
-    console.log('Generating message with:', { messageType, toneStyle, goalLightConversation, goalRecallMemory });
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    // Mock new message generation (replace with actual API response)
-    setGeneratedMessage(generatedMessage + ' (재생성됨)');
-    setPrediction(`${Math.floor(Math.random() * 30) + 50}%`); // Random prediction
-    setWarning(Math.random() > 0.5 ? '주의: 상대방이 부담을 느낄 수 있음' : null); // Set to string or null
-    setIsGenerating(false);
+    try {
+      const result = await messageApi.generateMessage({
+        purpose: messagePurpose,
+        tone_style: toneStyle
+      });
+      
+      setGeneratedMessage(result.message);
+      setPrediction(`${result.positive_reaction}%`);
+      setWarning(result.warning);
+    } catch (error) {
+      console.error('메시지 생성 중 오류 발생:', error);
+      Alert.alert('오류', '메시지 생성 중 문제가 발생했습니다.');
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleSave = () => {
@@ -119,7 +162,22 @@ const MessageGeneratorScreen = () => {
         <Text style={styles.screenTitle}>설득 메시지 생성기</Text>
         <Text style={styles.screenDescription}>AI의 도움을 받아 효과적인 메시지를 작성해보세요.</Text>
 
-        <InputRow label="메시지 유형" value={messageType} onPress={selectMessageType} />
+        <View style={styles.section}>
+          <Text style={styles.label}>메시지 목적</Text>
+          <TextInput
+            style={styles.messagePurposeInput}
+            placeholder="메시지의 목적을 입력하세요 (최대 300자)"
+            placeholderTextColor="#666"
+            value={messagePurpose}
+            onChangeText={setMessagePurpose}
+            multiline
+            maxLength={300}
+            textAlignVertical="top"
+          />
+          <Text style={styles.characterCount}>
+            {messagePurpose.length}/300
+          </Text>
+        </View>
 
         <View style={styles.section}>
           <Text style={styles.label}>말투 스타일</Text>
@@ -131,46 +189,76 @@ const MessageGeneratorScreen = () => {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.label}>메시지 목표</Text>
-           <Checkbox label="가벼운 대화로 시작" value={goalLightConversation} onValueChange={setGoalLightConversation} />
-           <Checkbox label="과거 추억 상기시키기" value={goalRecallMemory} onValueChange={setGoalRecallMemory} />
+          <Text style={styles.label}>추천 목표</Text>
+          <Text style={styles.sectionDescription}>당신의 데이터를 분석한 결과, 다음과 같은 목표가 추천됩니다.</Text>
+          {isLoadingGoals ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color="#4A90E2" />
+              <Text style={styles.loadingText}>추천 목표를 불러오는 중...</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={recommendedGoals}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={({ item }) => (
+                <RecommendedGoalItem goal={item} />
+              )}
+              scrollEnabled={false}
+              style={styles.goalsList}
+            />
+          )}
         </View>
 
         <View style={styles.section}>
-           <Text style={styles.label}>생성된 메시지</Text>
-           <View style={styles.messageOutputContainer}>
-               <TextInput
-                   style={styles.messageOutput}
-                   value={generatedMessage}
-                   onChangeText={setGeneratedMessage} // Allow editing for now
-                   multiline
-                   editable={!isGenerating} // Disable editing while generating
-               />
-           </View>
-            <Text style={styles.predictionText}>
-                설득 성공 예측률: <Text style={{ color: '#4A90E2', fontWeight: 'bold' }}>{prediction}</Text>
-            </Text>
-            {warning && (
-                <View style={styles.warningContainer}>
-                    <Ionicons name="alert-circle-outline" size={16} color="#FFA500" style={{ marginRight: 5 }}/>
-                    <Text style={styles.warningText}>{warning}</Text>
-                </View>
+          <Text style={styles.label}>생성된 메시지</Text>
+          <View style={styles.messageContainer}>
+            <Text style={styles.messageText}>{generatedMessage}</Text>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.label}>예측 결과</Text>
+          <View style={styles.predictionContainer}>
+            <View style={styles.predictionItem}>
+              <Text style={styles.predictionLabel}>긍정적 반응</Text>
+              <Text style={styles.predictionValue}>{prediction}</Text>
+            </View>
+          </View>
+          {warning && (
+            <View style={styles.warningContainer}>
+              <Ionicons name="warning" size={20} color="#FF9500" />
+              <Text style={styles.warningText}>{warning}</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={[styles.button, styles.generateButton]}
+            onPress={handleGenerate}
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <ActivityIndicator size="small" color="#FFF" />
+            ) : (
+              <Text style={styles.buttonText}>메시지 생성하기</Text>
             )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.button, styles.saveButton]}
+            onPress={handleSave}
+          >
+            <Text style={styles.buttonText}>저장하기</Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.actionButtonsContainer}>
-            <TouchableOpacity style={styles.regenerateButton} onPress={handleGenerate} disabled={isGenerating}>
-                {isGenerating ? <ActivityIndicator color="#FFF" /> : <Text style={styles.buttonText}>재생성</Text>}
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={isGenerating}>
-                <Text style={styles.buttonText}>메시지 저장</Text>
-            </TouchableOpacity>
-        </View>
-
-         <TouchableOpacity style={styles.nextStepContainer} onPress={goToScenarioAnalysis}>
-             <Text style={styles.nextStepText}>다음: 이 메시지 이후 시나리오 분석</Text>
-             <MaterialIcons name="keyboard-arrow-right" size={24} color="#888" />
-         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.analysisButton}
+          onPress={goToScenarioAnalysis}
+        >
+          <Text style={styles.analysisButtonText}>시나리오 분석하기</Text>
+          <MaterialIcons name="arrow-forward" size={20} color="#4A90E2" />
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -285,45 +373,62 @@ const styles = StyleSheet.create({
     fontSize: 15, // Slightly larger
     flex: 1,
   },
-   messageOutputContainer: {
+   messageContainer: {
        backgroundColor: '#1C1C1E', // Darker card background
        borderRadius: 10,
        padding: 15,
        minHeight: 120, // Increased height
        marginBottom: 10,
    },
-   messageOutput: {
+   messageText: {
        color: '#FFF',
        fontSize: 15,
        lineHeight: 22,
        textAlignVertical: 'top',
    },
-    predictionText: {
+    predictionContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 5,
+        backgroundColor: '#1C1C1E',
+        padding: 10,
+        borderRadius: 8,
+        marginBottom: 10,
+    },
+    predictionItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    predictionLabel: {
         fontSize: 14,
         color: '#AAA',
-        marginBottom: 5,
-        marginTop: 10, // Added margin top
+        marginRight: 5,
+    },
+    predictionValue: {
+        fontSize: 14,
+        color: '#4A90E2',
+        fontWeight: 'bold',
     },
     warningContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginTop: 5,
-        backgroundColor: '#332d1a', // Dark yellow background for warning
+        backgroundColor: '#332d1a',
         padding: 10,
         borderRadius: 8,
     },
     warningText: {
         fontSize: 13,
         color: '#FFA500',
+        marginLeft: 8,
         flex: 1,
     },
-    actionButtonsContainer: {
+    buttonContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginTop: 20,
         marginBottom: 20,
     },
-    regenerateButton: {
+    button: {
         backgroundColor: '#444',
         paddingVertical: 15,
         borderRadius: 10,
@@ -333,22 +438,18 @@ const styles = StyleSheet.create({
         marginRight: 10,
         minHeight: 50,
     },
+    generateButton: {
+        backgroundColor: '#4A90E2',
+    },
     saveButton: {
         backgroundColor: '#4A90E2',
-        paddingVertical: 15,
-        borderRadius: 10,
-        alignItems: 'center',
-        justifyContent: 'center',
-        flex: 1,
-        marginLeft: 10,
-        minHeight: 50,
     },
     buttonText: {
         color: '#FFF',
         fontSize: 16,
         fontWeight: 'bold',
     },
-    nextStepContainer: {
+    analysisButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -357,10 +458,70 @@ const styles = StyleSheet.create({
         padding: 15,
         marginTop: 10,
     },
-    nextStepText: {
+    analysisButtonText: {
         fontSize: 14,
         color: '#FFF',
         fontWeight: 'bold',
+    },
+    goalsList: {
+        marginTop: 10,
+    },
+    loadingContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 20,
+    },
+    loadingText: {
+        marginLeft: 10,
+        fontSize: 16,
+        color: '#AAA',
+    },
+    goalItem: {
+        backgroundColor: '#1C1C1E',
+        borderRadius: 10,
+        padding: 15,
+        marginBottom: 10,
+    },
+    goalItemContent: {
+        flex: 1,
+    },
+    goalItemTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#FFF',
+        marginBottom: 4,
+    },
+    goalItemDescription: {
+        fontSize: 14,
+        color: '#AAA',
+        marginBottom: 8,
+    },
+    goalItemReason: {
+        fontSize: 14,
+        color: '#AAA',
+        marginTop: 8,
+        fontStyle: 'italic',
+    },
+    sectionDescription: {
+        fontSize: 14,
+        color: '#AAA',
+        marginBottom: 15,
+    },
+    messagePurposeInput: {
+        backgroundColor: '#1C1C1E',
+        borderRadius: 10,
+        padding: 15,
+        color: '#FFF',
+        fontSize: 16,
+        minHeight: 100,
+        textAlignVertical: 'top',
+    },
+    characterCount: {
+        color: '#666',
+        fontSize: 12,
+        textAlign: 'right',
+        marginTop: 5,
     },
 });
 

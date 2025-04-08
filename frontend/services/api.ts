@@ -110,6 +110,33 @@ interface OnboardingResponse {
   strategy_type: string;
 }
 
+// 목표 목록 타입 정의
+export interface Goal {
+  id: number;
+  name: string;
+  description: string;
+}
+
+// 목표 목록 API 함수
+export const getGoals = async (): Promise<Goal[]> => {
+  try {
+    // 실제 API 구현 전까지는 목업 데이터 반환
+    return mockGoals;
+  } catch (error) {
+    console.error('목표 목록을 가져오는 중 오류 발생:', error);
+    throw error;
+  }
+};
+
+// 목업 데이터
+const mockGoals: Goal[] = [
+  { id: 1, name: '재회', description: '전 연인과 다시 관계를 맺고 싶어요' },
+  { id: 2, name: '마음 정리', description: '이전 관계에서 완전히 벗어나고 싶어요' },
+  { id: 3, name: '친구 관계 유지', description: '연인 관계는 끝났지만 친구로 지내고 싶어요' },
+  { id: 4, name: '자기 이해', description: '이전 관계를 통해 나 자신을 더 잘 이해하고 싶어요' },
+  { id: 5, name: '성장', description: '이 경험을 통해 정서적으로 성장하고 싶어요' },
+];
+
 // 사용자 관련 API
 export const userApi = {
   // 로그인
@@ -226,4 +253,47 @@ export const onboardingApi = {
       throw error;
     }
   },
+};
+
+// 메시지 관련 타입 정의
+export interface RecommendedGoal {
+  id: number;
+  name: string;
+  description: string;
+  reason: string;
+  confidence: number;
+}
+
+export interface GeneratedMessage {
+  message: string;
+  positive_reaction: number;
+  warning: string | null;
+}
+
+// 메시지 API
+export const messageApi = {
+  // 추천 목표 목록 가져오기
+  getRecommendedGoals: async (): Promise<RecommendedGoal[]> => {
+    try {
+      const response = await api.get('/messages/recommended-goals');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching recommended goals:', error);
+      throw error;
+    }
+  },
+
+  // 메시지 생성
+  generateMessage: async (data: {
+    purpose: string;
+    tone_style: string;
+  }): Promise<GeneratedMessage> => {
+    try {
+      const response = await api.post('/messages/generate', data);
+      return response.data;
+    } catch (error) {
+      console.error('Error generating message:', error);
+      throw error;
+    }
+  }
 }; 

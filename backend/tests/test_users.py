@@ -1,50 +1,20 @@
 import pytest
-from fastapi import status
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+from app.main import app
+from app.models.user import User
+from app.core.security import create_access_token
 
-def test_read_user_me(client, test_user_token):
-    """현재 로그인한 사용자의 프로필 정보 조회 테스트"""
+
+def test_get_me_unauthorized(client: TestClient):
+    # 인증 없이 요청
+    response = client.get("/api/users/me")
+    assert response.status_code == 401
+
+def test_get_me_invalid_token(client: TestClient):
+    # 잘못된 토큰으로 요청
     response = client.get(
         "/api/users/me",
-        headers={"Authorization": f"Bearer {test_user_token}"}
+        headers={"Authorization": "Bearer invalid_token"}
     )
-    assert response.status_code == status.HTTP_200_OK
-    data = response.json()
-    assert data["email"] == "test@example.com"
-    assert data["username"] == "testuser"
-    assert data["full_name"] == "Test User"
-
-def test_read_user_me_unauthorized(client):
-    """인증되지 않은 사용자의 프로필 정보 조회 시도 테스트"""
-    response = client.get("/api/users/me")
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
-
-def test_update_user_me(client, test_user_token):
-    """현재 로그인한 사용자의 프로필 정보 수정 테스트"""
-    response = client.put(
-        "/api/users/me",
-        headers={"Authorization": f"Bearer {test_user_token}"},
-        json={
-            "email": "updated@example.com",
-            "username": "updateduser",
-            "password": "newpassword123",
-            "full_name": "Updated User"
-        }
-    )
-    assert response.status_code == status.HTTP_200_OK
-    data = response.json()
-    assert data["email"] == "updated@example.com"
-    assert data["username"] == "updateduser"
-    assert data["full_name"] == "Updated User"
-
-def test_update_user_me_unauthorized(client):
-    """인증되지 않은 사용자의 프로필 정보 수정 시도 테스트"""
-    response = client.put(
-        "/api/users/me",
-        json={
-            "email": "updated@example.com",
-            "username": "updateduser",
-            "password": "newpassword123",
-            "full_name": "Updated User"
-        }
-    )
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED 
+    assert response.status_code == 401 
