@@ -11,7 +11,8 @@ import {
   TextInput,
   ActivityIndicator,
   StatusBar,
-  FlatList
+  FlatList,
+  Clipboard
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
@@ -92,10 +93,12 @@ const MessageGeneratorScreen = () => {
   const [toneStyle, setToneStyle] = useState('logical'); // logical, emotional, curious
   const [recommendedGoals, setRecommendedGoals] = useState<RecommendedGoal[]>([]);
   const [generatedMessage, setGeneratedMessage] = useState(''); // 생성된 메시지
+  const [editedMessage, setEditedMessage] = useState(''); // 수정된 메시지
   const [prediction, setPrediction] = useState(''); // 긍정적 반응 예측
   const [warning, setWarning] = useState<string | null>(null); // 경고 메시지
   const [isGenerating, setIsGenerating] = useState(false); // 메시지 생성 중 상태
   const [isLoadingGoals, setIsLoadingGoals] = useState(true); // 목표 로딩 중 상태
+  const [error, setError] = useState<string | null>(null); // 에러 메시지
 
   // 추천 목표 목록 가져오기
   useEffect(() => {
@@ -131,6 +134,7 @@ const MessageGeneratorScreen = () => {
       });
       
       setGeneratedMessage(result.message);
+      setEditedMessage(result.message); // 수정 가능한 메시지 상태 초기화
       setPrediction(`${result.positive_reaction}%`);
       setWarning(result.warning);
     } catch (error) {
@@ -138,6 +142,16 @@ const MessageGeneratorScreen = () => {
       Alert.alert('오류', '메시지 생성 중 문제가 발생했습니다.');
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    try {
+      await Clipboard.setString(editedMessage);
+      Alert.alert('성공', '메시지가 클립보드에 복사되었습니다.');
+    } catch (error) {
+      console.error('클립보드 복사 중 오류 발생:', error);
+      Alert.alert('오류', '메시지 복사 중 문제가 발생했습니다.');
     }
   };
 
@@ -211,9 +225,15 @@ const MessageGeneratorScreen = () => {
 
         <View style={styles.section}>
           <Text style={styles.label}>생성된 메시지</Text>
-          <View style={styles.messageContainer}>
-            <Text style={styles.messageText}>{generatedMessage}</Text>
-          </View>
+            <TextInput
+              style={styles.messagePurposeInput}
+              value={editedMessage}
+              onChangeText={setEditedMessage}
+              multiline
+              placeholder="메시지가 여기에 표시됩니다."
+              placeholderTextColor="#666"
+              textAlignVertical="top"
+            />
         </View>
 
         <View style={styles.section}>
@@ -245,10 +265,11 @@ const MessageGeneratorScreen = () => {
             )}
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.button, styles.saveButton]}
-            onPress={handleSave}
+            style={[styles.button, styles.copyButton]}
+            onPress={handleCopy}
+            disabled={!editedMessage}
           >
-            <Text style={styles.buttonText}>저장하기</Text>
+            <Text style={styles.buttonText}>메시지 복사하기</Text>
           </TouchableOpacity>
         </View>
 
@@ -374,14 +395,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
    messageContainer: {
-       backgroundColor: '#1C1C1E', // Darker card background
+       backgroundColor: '#1C1C1E',
        borderRadius: 10,
-       padding: 15,
-       minHeight: 120, // Increased height
+       padding: 0,
+       minHeight: 120,
        marginBottom: 10,
+       overflow: 'hidden',
+       borderWidth: 1,
+       borderColor: '#333',
+       elevation: 0, // Android 그림자 제거
+       shadowColor: 'transparent', // iOS 그림자 제거
+       shadowOffset: { width: 0, height: 0 },
+       shadowOpacity: 0,
+       shadowRadius: 0,
+   },
+   messageInput: {
+       width: '100%',
+       minHeight: 150,
+       padding: 15,
+       backgroundColor: '#1C1C1E',
+       fontSize: 16,
+       color: '#FFFFFF',
+       textAlignVertical: 'top',
+       borderWidth: 0,
    },
    messageText: {
-       color: '#FFF',
+       color: '#FFFFFF',
        fontSize: 15,
        lineHeight: 22,
        textAlignVertical: 'top',
@@ -427,6 +466,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         marginTop: 20,
         marginBottom: 20,
+        gap: 10, // 버튼 사이의 간격을 일정하게 설정
     },
     button: {
         backgroundColor: '#444',
@@ -435,13 +475,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         flex: 1,
-        marginRight: 10,
         minHeight: 50,
     },
     generateButton: {
         backgroundColor: '#4A90E2',
     },
-    saveButton: {
+    copyButton: {
         backgroundColor: '#4A90E2',
     },
     buttonText: {
@@ -512,8 +551,8 @@ const styles = StyleSheet.create({
         backgroundColor: '#1C1C1E',
         borderRadius: 10,
         padding: 15,
-        color: '#FFF',
-        fontSize: 16,
+        color: '#AAA',
+        fontSize: 14,
         minHeight: 100,
         textAlignVertical: 'top',
     },
