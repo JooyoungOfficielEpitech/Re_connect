@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,14 @@ import { useAuth } from '@/context/AuthContext'; // Import useAuth for logout
 import { Link, router } from 'expo-router';
 
 const ProfileScreen = () => {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+  const [isSubscribed, setIsSubscribed] = useState(false);
+
+  // 구독 상태 확인
+  useEffect(() => {
+    // TODO: 백엔드 API 연동 시 실제 구독 상태 확인
+    setIsSubscribed(false);
+  }, []);
 
   // Settings data without href for now
   const otherSettings = [
@@ -28,17 +35,24 @@ const ProfileScreen = () => {
       Alert.alert('구현 예정', `${settingTitle} 화면은 아직 구현되지 않았습니다.`);
   };
 
+  // 구독하기 버튼 핸들러
+  const handleSubscribe = () => {
+    router.push('/payment');
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
         {/* Profile Section */}
         <View style={styles.profileSection}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>JK</Text>
+            <Text style={styles.avatarText}>{user?.full_name?.substring(0, 2) || 'UN'}</Text>
           </View>
           <View style={styles.profileInfo}>
-            <Text style={styles.name}>김준호</Text>
-            <Text style={styles.membership}>기본 멤버십</Text>
+            <Text style={styles.name}>{user?.full_name || '사용자'}</Text>
+            <Text style={styles.membership}>
+              {isSubscribed ? '프리미엄 멤버십' : '기본 멤버십'}
+            </Text>
           </View>
           <TouchableOpacity style={styles.editButton} onPress={() => console.log('Edit Profile Pressed')}>
             <Text style={styles.editButtonText}>프로필 수정</Text>
@@ -46,20 +60,29 @@ const ProfileScreen = () => {
         </View>
 
         {/* Premium Features Section */}
-        <View style={styles.premiumSection}>
-          <Text style={styles.sectionTitle}>프리미엄 구독</Text>
-          <View style={styles.premiumCard}>
-            <Text style={styles.premiumCardTitle}>고급 설득 플랜 생성</Text>
-            <View style={styles.premiumFeatures}>
-              <Text style={styles.premiumFeatureText}>• 고급 설득 플랜 생성</Text>
-              <Text style={styles.premiumFeatureText}>• 감정 분석 보고서</Text>
-              <Text style={styles.premiumFeatureText}>• 관계 복구 리포트 PDF</Text>
+        {!isSubscribed && (
+          <View style={styles.premiumSection}>
+            <Text style={styles.sectionTitle}>프리미엄 구독</Text>
+            <View style={styles.premiumCard}>
+              <Text style={styles.premiumCardTitle}>고급 설득 플랜 생성</Text>
+              <View style={styles.premiumFeatures}>
+                <Text style={styles.premiumFeatureText}>• 고급 설득 플랜 생성</Text>
+                <Text style={styles.premiumFeatureText}>• 감정 분석 보고서</Text>
+                <Text style={styles.premiumFeatureText}>• 관계 복구 리포트 PDF</Text>
+              </View>
+              <View style={styles.priceContainer}>
+                <Text style={styles.priceText}>월 9,900원</Text>
+                <Text style={styles.priceSubtext}>(VAT 포함)</Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.subscribeButton}
+                onPress={handleSubscribe}
+              >
+                <Text style={styles.subscribeButtonText}>구독하기</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.subscribeButton}>
-              <Text style={styles.subscribeButtonText}>구독하기</Text>
-            </TouchableOpacity>
           </View>
-        </View>
+        )}
 
         {/* Settings Section */}
         <View style={styles.settingsSection}>
@@ -285,6 +308,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 5,
     marginLeft: 5,
+  },
+  priceContainer: {
+    marginTop: 15,
+    alignItems: 'center',
+  },
+  priceText: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  priceSubtext: {
+    color: '#A0A0A0',
+    fontSize: 14,
+    marginTop: 2,
   },
 });
 
